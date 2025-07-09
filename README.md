@@ -1,0 +1,2 @@
+# CW-RailsPathMetrics
+AWS CloudWatchのリクエストパス毎の集計を出力するアプリケーション
