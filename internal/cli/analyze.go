@@ -1,10 +1,13 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"time"
 
+	"github.com/kgrsutos/cw-railspathmetrics/internal/cloudwatch"
+	"github.com/kgrsutos/cw-railspathmetrics/internal/models"
 	"github.com/spf13/cobra"
 )
 
@@ -72,8 +75,36 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 		"endUTC", end.UTC(),
 	)
 
-	// TODO: Implement CloudWatch logs fetching and analysis
-	fmt.Println("Analysis not yet implemented")
+	// Initialize CloudWatch client
+	ctx := context.Background()
+	client, err := cloudwatch.NewClient(ctx, profile)
+	if err != nil {
+		return fmt.Errorf("failed to initialize CloudWatch client: %w", err)
+	}
+
+	// Fetch log events
+	slog.Info("Fetching log events from CloudWatch")
+	events, err := client.FilterLogEventsWithPagination(ctx, logGroup, start, end)
+	if err != nil {
+		return fmt.Errorf("failed to fetch log events: %w", err)
+	}
+
+	// Convert CloudWatch events to our LogEvent model
+	var logEvents []models.LogEvent
+	for _, event := range events {
+		if event.EventId != nil && event.Message != nil && event.Timestamp != nil {
+			logEvents = append(logEvents, models.LogEvent{
+				ID:        *event.EventId,
+				Message:   *event.Message,
+				Timestamp: time.UnixMilli(*event.Timestamp),
+			})
+		}
+	}
+
+	slog.Info("Fetched log events", "count", len(logEvents))
+
+	// TODO: Implement log parsing and analysis
+	fmt.Printf("Successfully fetched %d log events\n", len(logEvents))
 
 	return nil
 }
