@@ -1,4 +1,6 @@
-.PHONY: build test lint clean run deps test-coverage install-tools help
+.PHONY: all build test lint clean run deps test-coverage install-tools help
+
+all: build test lint
 
 BINARY_NAME=cwrstats
 MAIN_PATH=./cmd/cwrstats

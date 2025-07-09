@@ -32,4 +32,3 @@ type PathMetrics struct {
 	MinTime string `json:"min_time"`
 	AvgTime string `json:"avg_time"`
 }
-

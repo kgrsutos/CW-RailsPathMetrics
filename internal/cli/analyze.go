@@ -30,10 +30,18 @@ func init() {
 	analyzeCmd.Flags().StringVar(&logGroup, "log-group", "", "CloudWatch Logs log group name (required)")
 	analyzeCmd.Flags().StringVar(&profile, "profile", "", "AWS profile name (required)")
 
-	analyzeCmd.MarkFlagRequired("start")
-	analyzeCmd.MarkFlagRequired("end")
-	analyzeCmd.MarkFlagRequired("log-group")
-	analyzeCmd.MarkFlagRequired("profile")
+	if err := analyzeCmd.MarkFlagRequired("start"); err != nil {
+		slog.Error("Failed to mark start flag as required", "error", err)
+	}
+	if err := analyzeCmd.MarkFlagRequired("end"); err != nil {
+		slog.Error("Failed to mark end flag as required", "error", err)
+	}
+	if err := analyzeCmd.MarkFlagRequired("log-group"); err != nil {
+		slog.Error("Failed to mark log-group flag as required", "error", err)
+	}
+	if err := analyzeCmd.MarkFlagRequired("profile"); err != nil {
+		slog.Error("Failed to mark profile flag as required", "error", err)
+	}
 }
 
 func runAnalyze(cmd *cobra.Command, args []string) error {
@@ -69,4 +77,3 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 
 	return nil
 }
-

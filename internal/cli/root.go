@@ -18,4 +18,3 @@ func Execute() error {
 func init() {
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 }
-
