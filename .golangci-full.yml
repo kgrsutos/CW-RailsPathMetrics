@@ -44,7 +44,7 @@ linters-settings:
   misspell:
     locale: US
   goimports:
-    local-prefixes: github.com/kgrsutos/CW-RailsPathMetrics
+    local-prefixes: github.com/kgrsutos/cw-railspathmetrics
   govet:
     enable:
       - shadow

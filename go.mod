@@ -1,4 +1,4 @@
-module github.com/kgrsutos/CW-RailsPathMetrics
+module github.com/kgrsutos/cw-railspathmetrics
 
 go 1.24.5
 

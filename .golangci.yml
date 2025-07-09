@@ -16,7 +16,7 @@ linters:
 
 linters-settings:
   goimports:
-    local-prefixes: github.com/kgrsutos/CW-RailsPathMetrics
+    local-prefixes: github.com/kgrsutos/cw-railspathmetrics
 
 issues:
   exclude-dirs:
