@@ -28,12 +28,13 @@ func TestParseLogEntry(t *testing.T) {
 	}{
 		{
 			name:  "Started log entry",
-			input: `Started GET "/users/123" for 127.0.0.1 at 2023-01-01 12:00:00 +0900`,
+			input: `Started GET "/users/123" for 127.0.0.1 at 2023-01-01 12:00:00 +0900 [a1b2c3d4]`,
 			want: &models.LogEntry{
 				Type:      "Started",
 				Method:    "GET",
 				Path:      "/users/123",
 				Timestamp: mustParseTime("2023-01-01 12:00:00 +0900"),
+				SessionID: "a1b2c3d4",
 			},
 			wantErr: false,
 		},
@@ -64,23 +65,25 @@ func TestParseLogEntry(t *testing.T) {
 		},
 		{
 			name:  "Started log with query parameters",
-			input: `Started POST "/api/users?page=1&limit=10" for 192.168.1.1 at 2023-01-01 15:30:45 +0900`,
+			input: `Started POST "/api/users?page=1&limit=10" for 192.168.1.1 at 2023-01-01 15:30:45 +0900 [xyz789]`,
 			want: &models.LogEntry{
 				Type:      "Started",
 				Method:    "POST",
 				Path:      "/api/users?page=1&limit=10",
 				Timestamp: mustParseTime("2023-01-01 15:30:45 +0900"),
+				SessionID: "xyz789",
 			},
 			wantErr: false,
 		},
 		{
 			name:  "Started log with nested path",
-			input: `Started DELETE "/posts/456/comments/789" for 10.0.0.1 at 2023-02-15 09:15:30 +0900`,
+			input: `Started DELETE "/posts/456/comments/789" for 10.0.0.1 at 2023-02-15 09:15:30 +0900 [def456]`,
 			want: &models.LogEntry{
 				Type:      "Started",
 				Method:    "DELETE",
 				Path:      "/posts/456/comments/789",
 				Timestamp: mustParseTime("2023-02-15 09:15:30 +0900"),
+				SessionID: "def456",
 			},
 			wantErr: false,
 		},
@@ -182,7 +185,7 @@ func TestIsStartedLog(t *testing.T) {
 	}{
 		{
 			name:  "Valid Started log",
-			input: `Started GET "/users" for 127.0.0.1 at 2023-01-01 12:00:00 +0900`,
+			input: `Started GET "/users" for 127.0.0.1 at 2023-01-01 12:00:00 +0900 [session123]`,
 			want:  true,
 		},
 		{
