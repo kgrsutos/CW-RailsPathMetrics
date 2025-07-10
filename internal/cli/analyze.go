@@ -6,9 +6,10 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/spf13/cobra"
+
 	"github.com/kgrsutos/cw-railspathmetrics/internal/cloudwatch"
 	"github.com/kgrsutos/cw-railspathmetrics/internal/models"
-	"github.com/spf13/cobra"
 )
 
 var (
