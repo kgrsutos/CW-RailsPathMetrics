@@ -128,9 +128,10 @@ I, [2025-07-10T17:28:13.321048 #7]  INFO -- : [session-id] Completed 200 OK in 3
 ```
 
 **Key Features:**
-- **Session ID Matching**: Both Started and Completed logs must contain the same session ID for proper pairing
+- **Session ID Matching**: SessionID is extracted from both Started and Completed logs for proper pairing
 - **Flexible Parsing**: Handles logs with or without log level prefixes automatically
 - **Performance Metrics**: Extracts Views duration, ActiveRecord duration, and additional metrics like Allocations
+- **Graceful Handling**: Logs without SessionID are processed but cannot be matched for timing metrics
 
 ### AWS Integration
 - Uses AWS SDK v2 with profile-based authentication
