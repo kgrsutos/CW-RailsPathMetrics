@@ -125,4 +125,3 @@ func (n *Normalizer) isDateFormat(segment string) bool {
 func (n *Normalizer) isOrderID(segment string) bool {
 	return orderIDRegex.MatchString(segment)
 }
-

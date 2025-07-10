@@ -4,9 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kgrsutos/cw-railspathmetrics/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/kgrsutos/cw-railspathmetrics/internal/models"
 )
 
 // mustParseTime is a helper function to parse time in tests
@@ -40,13 +41,13 @@ func TestParseLogEntry(t *testing.T) {
 			name:  "Completed log entry with session ID",
 			input: `Completed 200 OK in 150ms (Views: 100.0ms | ActiveRecord: 50.0ms) [a1b2c3d4]`,
 			want: &models.LogEntry{
-				Type:          "Completed",
-				StatusCode:    200,
-				StatusText:    "OK",
-				Duration:      150,
-				ViewDuration:  100.0,
-				DBDuration:    50.0,
-				SessionID:     "a1b2c3d4",
+				Type:         "Completed",
+				StatusCode:   200,
+				StatusText:   "OK",
+				Duration:     150,
+				ViewDuration: 100.0,
+				DBDuration:   50.0,
+				SessionID:    "a1b2c3d4",
 			},
 			wantErr: false,
 		},

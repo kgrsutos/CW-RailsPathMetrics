@@ -49,4 +49,3 @@ type RequestPair struct {
 	Started   *LogEntry
 	Completed *LogEntry
 }
-

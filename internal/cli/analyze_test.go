@@ -38,7 +38,7 @@ func TestParseTime(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			parsed, err := time.ParseInLocation("2006-01-02T15:04:05", tt.input, jst)
-			
+
 			if tt.hasError {
 				assert.Error(t, err)
 			} else {
@@ -54,7 +54,7 @@ func TestAnalyzeCommand(t *testing.T) {
 	assert.NotNil(t, analyzeCmd)
 	assert.Equal(t, "analyze", analyzeCmd.Use)
 	assert.Equal(t, "Analyze CloudWatch logs for Rails request metrics", analyzeCmd.Short)
-	
+
 	// Test that flags exist
 	assert.NotNil(t, analyzeCmd.Flags().Lookup("start"))
 	assert.NotNil(t, analyzeCmd.Flags().Lookup("end"))
