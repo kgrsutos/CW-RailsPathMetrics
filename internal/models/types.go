@@ -20,7 +20,7 @@ type LogEntry struct {
 	Duration     int       // Total duration in milliseconds - only for Completed logs
 	ViewDuration float64   // View rendering duration - only for Completed logs
 	DBDuration   float64   // ActiveRecord duration - only for Completed logs
-	SessionID    string    // Session identifier - only for Completed logs
+	SessionID    string    // Session identifier extracted from the log (used for matching Started and Completed logs)
 }
 
 // PathMetrics represents aggregated metrics for a specific path

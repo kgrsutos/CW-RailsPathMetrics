@@ -13,11 +13,13 @@ import (
 
 var (
 	// Regular expressions for parsing Rails logs
-	startedLogRegex   = regexp.MustCompile(`^Started\s+(\w+)\s+"([^"]+)"\s+for\s+[\d.]+\s+at\s+(.+)$`)
-	completedLogRegex = regexp.MustCompile(`^Completed\s+(\d+)\s+([^i]+)\s+in\s+(\d+)ms`)
+	// Handles both with and without log level prefix
+	startedLogRegex   = regexp.MustCompile(`(?:^|\]\s+)Started\s+(\w+)\s+"([^"]+)"\s+for\s+[\d.]+\s+at\s+(.+)$`)
+	completedLogRegex = regexp.MustCompile(`(?:^|\]\s+)Completed\s+(\d+)\s+([^i]+)\s+in\s+(\d+)ms`)
 	viewDurationRegex = regexp.MustCompile(`Views:\s+([\d.]+)ms`)
 	dbDurationRegex   = regexp.MustCompile(`ActiveRecord:\s+([\d.]+)ms`)
-	sessionIDRegex    = regexp.MustCompile(`\[([^\]]+)\]$`)
+	// Session ID can appear after log level prefix: [session-id] or at the end of line
+	sessionIDRegex = regexp.MustCompile(`\[([a-f0-9\-]+)\]\s+(?:Started|Completed)|\[([^\]]+)\]$`)
 )
 
 // Parser handles parsing of Rails log entries
@@ -63,8 +65,18 @@ func (p *Parser) parseStartedLog(logLine string) (*models.LogEntry, error) {
 		return nil, fmt.Errorf("invalid Started log format: %s", logLine)
 	}
 
+	// Extract session ID first
+	sessionID := p.extractSessionID(logLine)
+
+	// Clean timestamp - remove any trailing session ID if present
+	timestampStr := matches[3]
+	// Remove session ID in brackets at the end if present
+	if idx := strings.LastIndex(timestampStr, " ["); idx > 0 {
+		timestampStr = timestampStr[:idx]
+	}
+
 	// Parse timestamp
-	timestamp, err := p.parseTimestamp(matches[3])
+	timestamp, err := p.parseTimestamp(timestampStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse timestamp: %w", err)
 	}
@@ -74,6 +86,7 @@ func (p *Parser) parseStartedLog(logLine string) (*models.LogEntry, error) {
 		Method:    matches[1],
 		Path:      matches[2],
 		Timestamp: timestamp,
+		SessionID: sessionID,
 	}, nil
 }
 
@@ -123,7 +136,14 @@ func (p *Parser) parseCompletedLog(logLine string) (*models.LogEntry, error) {
 func (p *Parser) extractSessionID(logLine string) string {
 	matches := sessionIDRegex.FindStringSubmatch(logLine)
 	if len(matches) > 1 {
-		return matches[1]
+		// Check first capture group (session ID after log level)
+		if matches[1] != "" {
+			return matches[1]
+		}
+		// Check second capture group (session ID at end of line)
+		if len(matches) > 2 && matches[2] != "" {
+			return matches[2]
+		}
 	}
 	return ""
 }
