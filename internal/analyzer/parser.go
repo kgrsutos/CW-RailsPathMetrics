@@ -13,11 +13,11 @@ import (
 
 var (
 	// Regular expressions for parsing Rails logs
-	startedLogRegex = regexp.MustCompile(`^Started\s+(\w+)\s+"([^"]+)"\s+for\s+[\d.]+\s+at\s+(.+)$`)
+	startedLogRegex   = regexp.MustCompile(`^Started\s+(\w+)\s+"([^"]+)"\s+for\s+[\d.]+\s+at\s+(.+)$`)
 	completedLogRegex = regexp.MustCompile(`^Completed\s+(\d+)\s+([^i]+)\s+in\s+(\d+)ms`)
 	viewDurationRegex = regexp.MustCompile(`Views:\s+([\d.]+)ms`)
-	dbDurationRegex = regexp.MustCompile(`ActiveRecord:\s+([\d.]+)ms`)
-	sessionIDRegex = regexp.MustCompile(`\[([^\]]+)\]$`)
+	dbDurationRegex   = regexp.MustCompile(`ActiveRecord:\s+([\d.]+)ms`)
+	sessionIDRegex    = regexp.MustCompile(`\[([^\]]+)\]$`)
 )
 
 // Parser handles parsing of Rails log entries
@@ -134,3 +134,4 @@ func (p *Parser) parseTimestamp(timestampStr string) (time.Time, error) {
 	const layout = "2006-01-02 15:04:05 -0700"
 	return time.Parse(layout, timestampStr)
 }
+

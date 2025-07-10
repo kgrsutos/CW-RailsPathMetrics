@@ -25,23 +25,23 @@ type LogEntry struct {
 
 // PathMetrics represents aggregated metrics for a specific path
 type PathMetrics struct {
-	Path              string                 `json:"path"`
-	Count             int                    `json:"count"`
-	AverageTime       float64                `json:"average_time_ms"`
-	MinTime           int                    `json:"min_time_ms"`
-	MaxTime           int                    `json:"max_time_ms"`
-	StatusCodes       map[int]int            `json:"status_codes"`
-	Methods           map[string]int         `json:"methods"`
-	TotalViewDuration float64                `json:"total_view_duration_ms,omitempty"`
-	TotalDBDuration   float64                `json:"total_db_duration_ms,omitempty"`
+	Path              string         `json:"path"`
+	Count             int            `json:"count"`
+	AverageTime       float64        `json:"average_time_ms"`
+	MinTime           int            `json:"min_time_ms"`
+	MaxTime           int            `json:"max_time_ms"`
+	StatusCodes       map[int]int    `json:"status_codes"`
+	Methods           map[string]int `json:"methods"`
+	TotalViewDuration float64        `json:"total_view_duration_ms,omitempty"`
+	TotalDBDuration   float64        `json:"total_db_duration_ms,omitempty"`
 }
 
 // AnalysisResult represents the final analysis output
 type AnalysisResult struct {
-	StartTime    time.Time               `json:"start_time"`
-	EndTime      time.Time               `json:"end_time"`
-	TotalLogs    int                     `json:"total_logs_analyzed"`
-	PathMetrics  map[string]*PathMetrics `json:"path_metrics"`
+	StartTime   time.Time               `json:"start_time"`
+	EndTime     time.Time               `json:"end_time"`
+	TotalLogs   int                     `json:"total_logs_analyzed"`
+	PathMetrics map[string]*PathMetrics `json:"path_metrics"`
 }
 
 // RequestPair represents a matched Started and Completed log pair
@@ -49,3 +49,4 @@ type RequestPair struct {
 	Started   *LogEntry
 	Completed *LogEntry
 }
+

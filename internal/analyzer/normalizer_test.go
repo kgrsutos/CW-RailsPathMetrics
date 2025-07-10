@@ -263,6 +263,21 @@ func TestIsDateFormat(t *testing.T) {
 			segment:  "2023-13-01",
 			expected: false,
 		},
+		{
+			name:     "Invalid day",
+			segment:  "2023-02-30",
+			expected: false,
+		},
+		{
+			name:     "Valid leap year date",
+			segment:  "2024-02-29",
+			expected: true,
+		},
+		{
+			name:     "Invalid leap year date",
+			segment:  "2023-02-29",
+			expected: false,
+		},
 	}
 
 	normalizer := NewNormalizer()

@@ -3,13 +3,14 @@ package analyzer
 import (
 	"regexp"
 	"strings"
+	"time"
 )
 
 var (
 	// Regular expressions for ID detection
-	uuidRegex  = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
-	hexIDRegex = regexp.MustCompile(`^[0-9a-fA-F]{6,}$`)
-	dateRegex  = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+	uuidRegex    = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+	hexIDRegex   = regexp.MustCompile(`^[0-9a-fA-F]{6,}$`)
+	dateRegex    = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 	orderIDRegex = regexp.MustCompile(`^[A-Z]{3,}-[A-Z0-9]+-[0-9]+$|^[A-Z]{3,}-[0-9]+$`)
 )
 
@@ -33,7 +34,7 @@ func (n *Normalizer) NormalizePath(path string) string {
 
 	// Split path into segments
 	segments := strings.Split(pathPart, "/")
-	
+
 	// Process each segment
 	for i, segment := range segments {
 		if segment == "" {
@@ -73,7 +74,7 @@ func (n *Normalizer) isNumericID(segment string) bool {
 	if segment == "" {
 		return false
 	}
-	
+
 	for _, ch := range segment {
 		if ch < '0' || ch > '9' {
 			return false
@@ -92,7 +93,7 @@ func (n *Normalizer) isHexID(segment string) bool {
 	if len(segment) < 6 {
 		return false
 	}
-	
+
 	// Don't match pure numeric strings
 	hasLetter := false
 	for _, ch := range segment {
@@ -101,11 +102,11 @@ func (n *Normalizer) isHexID(segment string) bool {
 			break
 		}
 	}
-	
+
 	if !hasLetter {
 		return false
 	}
-	
+
 	return hexIDRegex.MatchString(segment)
 }
 
@@ -114,20 +115,14 @@ func (n *Normalizer) isDateFormat(segment string) bool {
 	if !dateRegex.MatchString(segment) {
 		return false
 	}
-	
-	// Basic validation of date components
-	parts := strings.Split(segment, "-")
-	month := parts[1]
-	
-	// Check month is valid (01-12)
-	if month < "01" || month > "12" {
-		return false
-	}
-	
-	return true
+
+	// Use time.Parse for robust date validation
+	_, err := time.Parse("2006-01-02", segment)
+	return err == nil
 }
 
 // isOrderID checks if a segment looks like an order/reference ID
 func (n *Normalizer) isOrderID(segment string) bool {
 	return orderIDRegex.MatchString(segment)
 }
+
