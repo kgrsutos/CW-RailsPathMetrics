@@ -36,6 +36,15 @@ type PathMetrics struct {
 	TotalDBDuration   float64        `json:"total_db_duration_ms,omitempty"`
 }
 
+// SimplifiedPathMetrics represents simplified metrics for JSON output
+type SimplifiedPathMetrics struct {
+	Path      string `json:"path"`
+	Count     int    `json:"count"`
+	MaxTimeMs int    `json:"max_time_ms"`
+	MinTimeMs int    `json:"min_time_ms"`
+	AvgTimeMs string `json:"avg_time_ms"`
+}
+
 // AnalysisResult represents the final analysis output
 type AnalysisResult struct {
 	StartTime   time.Time               `json:"start_time"`

@@ -45,7 +45,7 @@ func TestNormalizePath(t *testing.T) {
 		{
 			name:  "Path with query string",
 			input: "/users/123?page=1",
-			want:  "/users/:id?page=1",
+			want:  "/users/:id",
 		},
 		{
 			name:  "Date format YYYY-MM-DD",
@@ -86,6 +86,26 @@ func TestNormalizePath(t *testing.T) {
 			name:  "Trailing slash",
 			input: "/users/123/",
 			want:  "/users/:id/",
+		},
+		{
+			name:  "Path with multiple query parameters",
+			input: "/api/users/456?page=2&sort=name&filter=active",
+			want:  "/api/users/:id",
+		},
+		{
+			name:  "Path with empty query string",
+			input: "/products/789?",
+			want:  "/products/:id",
+		},
+		{
+			name:  "Complex path with query parameters",
+			input: "/organizations/123/teams/456?include=members&limit=50",
+			want:  "/organizations/:id/teams/:id",
+		},
+		{
+			name:  "Path with UUID and query parameters",
+			input: "/items/550e8400-e29b-41d4-a716-446655440000?version=2",
+			want:  "/items/:id",
 		},
 	}
 

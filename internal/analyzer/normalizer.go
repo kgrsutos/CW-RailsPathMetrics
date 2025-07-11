@@ -23,14 +23,11 @@ func NewNormalizer() *Normalizer {
 }
 
 // NormalizePath normalizes a request path by replacing dynamic segments with placeholders
+// Query parameters are excluded from the normalized path for aggregation
 func (n *Normalizer) NormalizePath(path string) string {
-	// Split path and query string
+	// Split path and query string - we'll exclude query parameters
 	parts := strings.SplitN(path, "?", 2)
 	pathPart := parts[0]
-	queryPart := ""
-	if len(parts) > 1 {
-		queryPart = "?" + parts[1]
-	}
 
 	// Split path into segments
 	segments := strings.Split(pathPart, "/")
@@ -47,9 +44,9 @@ func (n *Normalizer) NormalizePath(path string) string {
 		}
 	}
 
-	// Reconstruct path
+	// Reconstruct path without query parameters
 	normalizedPath := strings.Join(segments, "/")
-	return normalizedPath + queryPart
+	return normalizedPath
 }
 
 // shouldNormalize determines if a path segment should be normalized

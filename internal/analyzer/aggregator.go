@@ -3,15 +3,32 @@ package analyzer
 import (
 	"time"
 
+	"github.com/kgrsutos/cw-railspathmetrics/internal/config"
 	"github.com/kgrsutos/cw-railspathmetrics/internal/models"
 )
 
 // Aggregator handles aggregation of log entries into metrics
-type Aggregator struct{}
+type Aggregator struct {
+	pathExcluder *config.PathExcluder
+}
 
-// NewAggregator creates a new Aggregator instance
+// NewAggregator creates a new Aggregator instance with default path exclusions
 func NewAggregator() *Aggregator {
-	return &Aggregator{}
+	return &Aggregator{
+		pathExcluder: config.NewDefaultPathExcluder(),
+	}
+}
+
+// NewAggregatorWithConfig creates a new Aggregator instance with a config file
+func NewAggregatorWithConfig(configPath string) (*Aggregator, error) {
+	pathExcluder, err := config.NewPathExcluder(configPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Aggregator{
+		pathExcluder: pathExcluder,
+	}, nil
 }
 
 // MatchRequestPairs matches Started and Completed log entries by their SessionID
@@ -46,6 +63,11 @@ func (a *Aggregator) AggregateMetrics(pairs []*models.RequestPair, normalizer *N
 	pathMetrics := make(map[string]*models.PathMetrics)
 
 	for _, pair := range pairs {
+		// Check if the path should be excluded
+		if a.pathExcluder.ShouldExclude(pair.Started.Path) {
+			continue
+		}
+
 		// Normalize the path
 		normalizedPath := normalizer.NormalizePath(pair.Started.Path)
 

@@ -23,16 +23,16 @@ $ cwrstats analyze \
     {
         "path": "/path1/path2",
         "count": 100,
-        "max_time": 2300ms,
-        "min_time": 640ms,
-        "avg_time": "1000ms"
+        "max_time_ms": 2300,
+        "min_time_ms": 640,
+        "avg_time_ms": "1000"
     },
     {
         "path": "/path1/path3",
         "count": 50,
-        "max_time": 2200ms,
-        "min_time": 840ms,
-        "avg_time": "1200ms"
+        "max_time_ms": 2200,
+        "min_time_ms": 840,
+        "avg_time_ms": "1200"
     }
 ]
 ```
