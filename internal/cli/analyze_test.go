@@ -60,4 +60,5 @@ func TestAnalyzeCommand(t *testing.T) {
 	assert.NotNil(t, analyzeCmd.Flags().Lookup("end"))
 	assert.NotNil(t, analyzeCmd.Flags().Lookup("log-group"))
 	assert.NotNil(t, analyzeCmd.Flags().Lookup("profile"))
+	assert.NotNil(t, analyzeCmd.Flags().Lookup("config"))
 }

@@ -26,6 +26,20 @@ func NewAnalyzer() *Analyzer {
 	}
 }
 
+// NewAnalyzerWithConfig creates a new Analyzer instance with a custom config file
+func NewAnalyzerWithConfig(configPath string) (*Analyzer, error) {
+	aggregator, err := NewAggregatorWithConfig(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create aggregator with config: %w", err)
+	}
+
+	return &Analyzer{
+		parser:     NewParser(),
+		normalizer: NewNormalizer(),
+		aggregator: aggregator,
+	}, nil
+}
+
 // AnalyzeLogEvents analyzes CloudWatch log events and returns aggregated metrics
 func (a *Analyzer) AnalyzeLogEvents(logEvents []*models.LogEvent, startTime, endTime time.Time) *models.AnalysisResult {
 	var logEntries []*models.LogEntry

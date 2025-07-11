@@ -13,11 +13,20 @@ AWS CloudWatchのリクエストパス毎の集計を出力するCLIアプリケ
 ## How to Use
 
 ```
+# Default configuration
 $ cwrstats analyze \
   --start "2025-07-01T00:00:00" \
   --end "2025-07-01T23:59:59" \
   --log-group "/aws/rails/production-log" \
   --profile myprofile
+
+# Custom configuration
+$ cwrstats analyze \
+  --start "2025-07-01T00:00:00" \
+  --end "2025-07-01T23:59:59" \
+  --log-group "/aws/rails/production-log" \
+  --profile myprofile \
+  --config "./custom_exclusions.yml"
 
 [
     {
@@ -40,5 +49,6 @@ $ cwrstats analyze \
 ### Option
 
 - --start / --end ログ取得開始時刻と終了時刻（JST）必須
---log-group	CloudWatch Logs のロググループ名 必須
---profile	AWS profile 必須
+- --log-group	CloudWatch Logs のロググループ名 必須
+- --profile	AWS profile 必須
+- --config	パス除外設定ファイル（オプション、デフォルト: config/excluded_paths.yml）
