@@ -40,20 +40,12 @@ make deps
 
 ### Application Usage
 ```bash
-# Analyze CloudWatch logs (default config)
+# Analyze CloudWatch logs
 ./cwrstats analyze \
   --start "2025-07-01T00:00:00" \
   --end "2025-07-01T23:59:59" \
   --log-group "/aws/rails/production-log" \
   --profile myprofile
-
-# Analyze CloudWatch logs with custom config
-./cwrstats analyze \
-  --start "2025-07-01T00:00:00" \
-  --end "2025-07-01T23:59:59" \
-  --log-group "/aws/rails/production-log" \
-  --profile myprofile \
-  --config "./custom_exclusions.yml"
 ```
 
 ## Architecture
