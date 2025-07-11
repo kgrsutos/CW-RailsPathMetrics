@@ -137,26 +137,45 @@ func TestAnalyzer_OutputJSON(t *testing.T) {
 					},
 				},
 			},
-			expectedJSON: `{
-  "start_time": "2023-01-01T00:00:00Z",
-  "end_time": "2023-01-01T23:59:59Z",
-  "total_logs_analyzed": 2,
-  "path_metrics": {
-    "/users/:id": {
-      "path": "/users/:id",
-      "count": 1,
-      "average_time_ms": 150,
-      "min_time_ms": 150,
-      "max_time_ms": 150,
-      "status_codes": {
-        "200": 1
-      },
-      "methods": {
-        "GET": 1
-      }
+			expectedJSON: `[
+    {
+        "path": "/users/:id",
+        "count": 1,
+        "max_time_ms": 150,
+        "min_time_ms": 150,
+        "avg_time_ms": "150"
     }
-  }
-}`,
+]`,
+		},
+		{
+			name: "output analysis result with view and DB durations",
+			analysisResult: &models.AnalysisResult{
+				StartTime: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+				EndTime:   time.Date(2023, 1, 1, 23, 59, 59, 0, time.UTC),
+				TotalLogs: 4,
+				PathMetrics: map[string]*models.PathMetrics{
+					"/api/posts/:id": {
+						Path:              "/api/posts/:id",
+						Count:             2,
+						AverageTime:       200.0,
+						MinTime:           150,
+						MaxTime:           250,
+						StatusCodes:       map[int]int{200: 2},
+						Methods:           map[string]int{"GET": 2},
+						TotalViewDuration: 180.5,
+						TotalDBDuration:   95.2,
+					},
+				},
+			},
+			expectedJSON: `[
+    {
+        "path": "/api/posts/:id",
+        "count": 2,
+        "max_time_ms": 250,
+        "min_time_ms": 150,
+        "avg_time_ms": "200"
+    }
+]`,
 		},
 		{
 			name: "output empty analysis result",
@@ -166,12 +185,81 @@ func TestAnalyzer_OutputJSON(t *testing.T) {
 				TotalLogs:   0,
 				PathMetrics: map[string]*models.PathMetrics{},
 			},
-			expectedJSON: `{
-  "start_time": "2023-01-01T00:00:00Z",
-  "end_time": "2023-01-01T23:59:59Z",
-  "total_logs_analyzed": 0,
-  "path_metrics": {}
-}`,
+			expectedJSON: `[]`,
+		},
+		{
+			name: "output multiple paths",
+			analysisResult: &models.AnalysisResult{
+				StartTime: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+				EndTime:   time.Date(2023, 1, 1, 23, 59, 59, 0, time.UTC),
+				TotalLogs: 6,
+				PathMetrics: map[string]*models.PathMetrics{
+					"/path1/path2": {
+						Path:        "/path1/path2",
+						Count:       100,
+						AverageTime: 1000.0,
+						MinTime:     640,
+						MaxTime:     2300,
+						StatusCodes: map[int]int{200: 100},
+						Methods:     map[string]int{"GET": 100},
+					},
+					"/path1/path3": {
+						Path:        "/path1/path3",
+						Count:       50,
+						AverageTime: 1200.0,
+						MinTime:     840,
+						MaxTime:     2200,
+						StatusCodes: map[int]int{200: 50},
+						Methods:     map[string]int{"POST": 50},
+					},
+				},
+			},
+			expectedJSON: `[
+    {
+        "path": "/path1/path2",
+        "count": 100,
+        "max_time_ms": 2300,
+        "min_time_ms": 640,
+        "avg_time_ms": "1000"
+    },
+    {
+        "path": "/path1/path3",
+        "count": 50,
+        "max_time_ms": 2200,
+        "min_time_ms": 840,
+        "avg_time_ms": "1200"
+    }
+]`,
+		},
+		{
+			name: "output analysis result with zero durations",
+			analysisResult: &models.AnalysisResult{
+				StartTime: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+				EndTime:   time.Date(2023, 1, 1, 23, 59, 59, 0, time.UTC),
+				TotalLogs: 2,
+				PathMetrics: map[string]*models.PathMetrics{
+					"/health": {
+						Path:              "/health",
+						Count:             5,
+						AverageTime:       0,
+						MinTime:           0,
+						MaxTime:           0,
+						StatusCodes:       map[int]int{200: 5},
+						Methods:           map[string]int{"GET": 5},
+						TotalViewDuration: 0,
+						TotalDBDuration:   0,
+					},
+				},
+			},
+			expectedJSON: `[
+    {
+        "path": "/health",
+        "count": 5,
+        "max_time_ms": 0,
+        "min_time_ms": 0,
+        "avg_time_ms": "0"
+    }
+]`,
 		},
 	}
 

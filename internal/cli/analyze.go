@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/kgrsutos/cw-railspathmetrics/internal/analyzer"
 	"github.com/kgrsutos/cw-railspathmetrics/internal/cloudwatch"
 	"github.com/kgrsutos/cw-railspathmetrics/internal/models"
 )
@@ -91,10 +93,10 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 	}
 
 	// Convert CloudWatch events to our LogEvent model
-	var logEvents []models.LogEvent
+	var logEvents []*models.LogEvent
 	for _, event := range events {
 		if event.EventId != nil && event.Message != nil && event.Timestamp != nil {
-			logEvents = append(logEvents, models.LogEvent{
+			logEvents = append(logEvents, &models.LogEvent{
 				ID:        *event.EventId,
 				Message:   *event.Message,
 				Timestamp: time.UnixMilli(*event.Timestamp),
@@ -104,8 +106,17 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 
 	slog.Info("Fetched log events", "count", len(logEvents))
 
-	// TODO: Implement log parsing and analysis
-	fmt.Printf("Successfully fetched %d log events\n", len(logEvents))
+	// Initialize analyzer
+	analyzer := analyzer.NewAnalyzer()
+
+	// Analyze log events
+	result := analyzer.AnalyzeLogEvents(logEvents, start.UTC(), end.UTC())
+
+	// Output JSON results
+	err = analyzer.OutputJSON(result, os.Stdout)
+	if err != nil {
+		return fmt.Errorf("failed to output results: %w", err)
+	}
 
 	return nil
 }

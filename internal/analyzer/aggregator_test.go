@@ -381,6 +381,96 @@ func TestAggregator_AggregateMetrics(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "handle zero duration logs",
+			pairs: []*models.RequestPair{
+				{
+					Started: &models.LogEntry{
+						Type:      "Started",
+						Method:    "GET",
+						Path:      "/health",
+						Timestamp: time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC),
+						SessionID: "health123",
+					},
+					Completed: &models.LogEntry{
+						Type:         "Completed",
+						StatusCode:   200,
+						StatusText:   "OK",
+						Duration:     0, // Zero duration
+						ViewDuration: 0,
+						DBDuration:   0,
+						SessionID:    "health123",
+					},
+				},
+			},
+			expected: map[string]*models.PathMetrics{
+				"/health": {
+					Path:              "/health",
+					Count:             1,
+					AverageTime:       0,
+					MinTime:           0,
+					MaxTime:           0,
+					StatusCodes:       map[int]int{200: 1},
+					Methods:           map[string]int{"GET": 1},
+					TotalViewDuration: 0,
+					TotalDBDuration:   0,
+				},
+			},
+		},
+		{
+			name:     "handle empty request pairs",
+			pairs:    []*models.RequestPair{},
+			expected: map[string]*models.PathMetrics{},
+		},
+		{
+			name: "exclude paths based on path exclusion rules",
+			pairs: []*models.RequestPair{
+				{
+					Started: &models.LogEntry{
+						Type:      "Started",
+						Method:    "GET",
+						Path:      "/users/123",
+						Timestamp: time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC),
+						SessionID: "user123",
+					},
+					Completed: &models.LogEntry{
+						Type:       "Completed",
+						StatusCode: 200,
+						StatusText: "OK",
+						Duration:   150,
+						SessionID:  "user123",
+					},
+				},
+				{
+					Started: &models.LogEntry{
+						Type:      "Started",
+						Method:    "GET",
+						Path:      "/rails/active_storage/blobs/456",
+						Timestamp: time.Date(2023, 1, 1, 12, 1, 0, 0, time.UTC),
+						SessionID: "storage456",
+					},
+					Completed: &models.LogEntry{
+						Type:       "Completed",
+						StatusCode: 200,
+						StatusText: "OK",
+						Duration:   100,
+						SessionID:  "storage456",
+					},
+				},
+			},
+			expected: map[string]*models.PathMetrics{
+				"/users/:id": {
+					Path:        "/users/:id",
+					Count:       1,
+					AverageTime: 150.0,
+					MinTime:     150,
+					MaxTime:     150,
+					StatusCodes: map[int]int{200: 1},
+					Methods:     map[string]int{"GET": 1},
+				},
+				// Note: /rails/active_storage path should be excluded
+			},
+		},
 	}
 
 	for _, tt := range tests {

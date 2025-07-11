@@ -1,0 +1,17 @@
+# Path exclusion configuration for CW-RailsPathMetrics
+# Paths listed here will be excluded from aggregation and analysis
+
+# Configuration format:
+# excluded_paths:
+#   - exact: "/exact/path/match"      # Exact path match
+#   - prefix: "/prefix/path"          # Prefix match (all paths starting with this)
+#   - pattern: "^/api/v[0-9]+/.*"     # Regex pattern match
+
+excluded_paths:
+  # Rails Active Storage paths (file uploads, downloads, etc.)
+  - prefix: "/rails/active_storage"
+  
+  # Additional examples (commented out):
+  # - exact: "/health"                # Health check endpoint
+  # - prefix: "/assets"               # Static assets
+  # - pattern: "^/api/internal/.*"    # Internal API endpoints

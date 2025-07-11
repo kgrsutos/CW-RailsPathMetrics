@@ -71,17 +71,19 @@ The analysis layer consists of four specialized components that work together:
 
 2. **Normalizer**: Converts dynamic paths to parameterized routes for aggregation
    - Normalizes numeric IDs, UUIDs, hex IDs, dates, and order IDs
-   - Converts `/users/123` to `/users/:id` while preserving query parameters
+   - Converts `/users/123` to `/users/:id` and excludes query parameters
+   - `/users/123?page=1` becomes `/users/:id` (query parameters are removed for aggregation)
    - Uses sophisticated pattern matching for accurate ID detection
 
 3. **Aggregator**: Matches log pairs and calculates comprehensive metrics
    - **Session ID-based Matching**: Matches Started/Completed logs by session ID (not FIFO)
+   - **Path Exclusion**: Filters out configured paths (e.g., `/rails/active_storage`)
    - Calculates average, min, max response times with proper statistical aggregation
    - Aggregates status codes, HTTP methods, and database/view durations
 
 4. **Analyzer**: Coordinates the entire analysis process
    - Orchestrates parsing, normalization, and aggregation in proper sequence
-   - Provides structured JSON output with comprehensive statistics
+   - Provides structured JSON output sorted by request count (descending)
    - Handles invalid log entries gracefully
 
 #### CloudWatch Integration
@@ -94,9 +96,10 @@ The analysis layer consists of four specialized components that work together:
 1. CLI parses user input and validates time ranges (JST → UTC conversion)
 2. CloudWatch client fetches log events with pagination support
 3. Parser extracts structured data from Rails log entries
-4. Normalizer standardizes request paths for aggregation
-5. Aggregator matches request pairs and calculates metrics
-6. Analyzer outputs structured JSON results
+4. Normalizer standardizes request paths for aggregation (removes query parameters)
+5. Aggregator filters paths using exclusion rules and matches request pairs
+6. Aggregator calculates metrics and statistics
+7. Analyzer outputs structured JSON results sorted by request count
 
 ## Development Guidelines
 
@@ -145,7 +148,9 @@ I, [2025-07-10T17:28:13.321048 #7]  INFO -- : [session-id] Completed 200 OK in 3
 - `internal/cli/`: Command-line interface implementation
 - `internal/cloudwatch/`: AWS CloudWatch integration
 - `internal/analyzer/`: Log analysis and aggregation
+- `internal/config/`: Path exclusion configuration management
 - `internal/models/`: Data type definitions
+- `config/excluded_paths.yml`: Path exclusion configuration file
 - `pkg/timeutil/`: Time processing utilities
 
 ## Dependencies
@@ -155,6 +160,7 @@ I, [2025-07-10T17:28:13.321048 #7]  INFO -- : [session-id] Completed 200 OK in 3
 - **Testing**: github.com/stretchr/testify
 - **Logging**: Standard library slog
 - **Linting**: golangci-lint v1.61.0
+- **YAML**: gopkg.in/yaml.v3 (for path exclusion configuration)
 
 ## Time Handling
 
@@ -163,12 +169,14 @@ All times are handled in JST (Asia/Tokyo) for input parsing but converted to UTC
 ## Implementation Notes
 
 ### Current Implementation Status
-- ✅ **Analysis Engine**: Fully implemented with comprehensive test coverage (95.7%)
+- ✅ **Analysis Engine**: Fully implemented with comprehensive test coverage (93.2%)
 - ✅ **CloudWatch Integration**: Complete with pagination and authentication
 - ✅ **CLI Interface**: Functional command-line interface with proper parameter validation
-- ⚠️ **Integration Gap**: CLI fetches logs but analysis pipeline not connected (see `internal/cli/analyze.go` line 107-108)
+- ✅ **Full Integration**: Complete end-to-end pipeline from CloudWatch logs to JSON output
+- ✅ **Path Exclusion**: Configurable path filtering with YAML configuration
+- ✅ **JSON Output**: Sorted by request count in descending order
 
-The analysis engine is production-ready with SessionID-based matching, path normalization, and metrics aggregation. The main remaining task is connecting the CLI's log fetching to the analysis pipeline.
+The application is production-ready with SessionID-based matching, path normalization, metrics aggregation, and configurable path exclusion.
 
 ### Key Design Patterns
 - **Interface-based Design**: All major components use interfaces for testability (CloudWatchLogsAPI)
@@ -182,22 +190,24 @@ The analysis engine is production-ready with SessionID-based matching, path norm
 - **Memory Management**: Processes logs in streams rather than loading everything into memory
 - **Efficient Matching**: Session-based matching algorithm avoids O(n²) complexity
 
-## Integration Example
+## Path Exclusion Configuration
 
-To complete the CLI integration, replace the TODO in `internal/cli/analyze.go` with:
+The application supports excluding specific paths from analysis using a YAML configuration file at `config/excluded_paths.yml`:
 
-```go
-// Initialize analyzer
-analyzer := analyzer.NewAnalyzer()
-
-// Analyze log events
-result := analyzer.AnalyzeLogEvents(logEvents, start.UTC(), end.UTC())
-
-// Output JSON results
-err = analyzer.OutputJSON(result, os.Stdout)
-if err != nil {
-    return fmt.Errorf("failed to output results: %w", err)
-}
+```yaml
+excluded_paths:
+  # Rails Active Storage paths (file uploads, downloads, etc.)
+  - prefix: "/rails/active_storage"
+  
+  # Additional examples:
+  # - exact: "/health"                # Health check endpoint
+  # - prefix: "/assets"               # Static assets  
+  # - pattern: "^/api/internal/.*"    # Internal API endpoints
 ```
 
-This connects the CloudWatch log fetching to the complete analysis pipeline.
+**Exclusion Rule Types:**
+- `exact`: Complete path match
+- `prefix`: Match all paths starting with the specified prefix
+- `pattern`: Regular expression pattern matching
+
+Default exclusions include Rails Active Storage paths to avoid skewing metrics with file upload/download traffic.
