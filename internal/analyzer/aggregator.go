@@ -19,6 +19,24 @@ func NewAggregator() *Aggregator {
 	}
 }
 
+// NewAggregatorWithConfig creates a new Aggregator instance with a config file
+func NewAggregatorWithConfig(configPath string) (*Aggregator, error) {
+	pathExcluder, err := config.NewPathExcluder(configPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Aggregator{
+		pathExcluder: pathExcluder,
+	}, nil
+}
+
+// NewAggregatorWithPathExcluder creates a new Aggregator instance with a given PathExcluder
+func NewAggregatorWithPathExcluder(pathExcluder *config.PathExcluder) *Aggregator {
+	return &Aggregator{
+		pathExcluder: pathExcluder,
+	}
+}
 
 // MatchRequestPairs matches Started and Completed log entries by their SessionID
 func (a *Aggregator) MatchRequestPairs(entries []*models.LogEntry) []*models.RequestPair {

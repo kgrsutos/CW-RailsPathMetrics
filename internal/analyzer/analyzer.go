@@ -2,11 +2,11 @@ package analyzer
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"sort"
 	"time"
 
+	"github.com/kgrsutos/cw-railspathmetrics/internal/config"
 	"github.com/kgrsutos/cw-railspathmetrics/internal/models"
 )
 
@@ -17,13 +17,40 @@ type Analyzer struct {
 	aggregator *Aggregator
 }
 
-// NewAnalyzer creates a new Analyzer instance
+// NewAnalyzer creates a new Analyzer instance with default configuration
 func NewAnalyzer() *Analyzer {
 	return &Analyzer{
 		parser:     NewParser(),
 		normalizer: NewNormalizer(),
 		aggregator: NewAggregator(),
 	}
+}
+
+// NewAnalyzerWithConfig creates a new Analyzer instance with custom configuration
+func NewAnalyzerWithConfig(configPath string) (*Analyzer, error) {
+	var aggregator *Aggregator
+	var err error
+
+	if configPath != "" {
+		// Use specific config file
+		aggregator, err = NewAggregatorWithConfig(configPath)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Search for config file or use default
+		pathExcluder, err := config.NewPathExcluderWithSearch()
+		if err != nil {
+			return nil, err
+		}
+		aggregator = NewAggregatorWithPathExcluder(pathExcluder)
+	}
+
+	return &Analyzer{
+		parser:     NewParser(),
+		normalizer: NewNormalizer(),
+		aggregator: aggregator,
+	}, nil
 }
 
 // AnalyzeLogEvents analyzes CloudWatch log events and returns aggregated metrics
@@ -55,7 +82,7 @@ func (a *Analyzer) OutputJSON(result *models.AnalysisResult, writer io.Writer) e
 			Count:     metrics.Count,
 			MaxTimeMs: metrics.MaxTime,
 			MinTimeMs: metrics.MinTime,
-			AvgTimeMs: fmt.Sprintf("%.0f", metrics.AverageTime),
+			AvgTimeMs: int(metrics.AverageTime),
 		})
 	}
 

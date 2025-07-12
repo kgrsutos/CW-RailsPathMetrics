@@ -65,6 +65,44 @@ func TestAnalyzeCommand(t *testing.T) {
 	assert.NotNil(t, analyzeCmd.Flags().Lookup("end"))
 	assert.NotNil(t, analyzeCmd.Flags().Lookup("log-group"))
 	assert.NotNil(t, analyzeCmd.Flags().Lookup("profile"))
+	assert.NotNil(t, analyzeCmd.Flags().Lookup("config"))
+}
+
+func TestAnalyzeCommand_ConfigFlag(t *testing.T) {
+	tests := []struct {
+		name         string
+		configFlag   string
+		expectedFlag string
+	}{
+		{
+			name:         "config flag with custom path",
+			configFlag:   "/custom/path/excluded_paths.yml",
+			expectedFlag: "/custom/path/excluded_paths.yml",
+		},
+		{
+			name:         "config flag empty",
+			configFlag:   "",
+			expectedFlag: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset config flag value before each test
+			configPath = ""
+
+			// Set the config flag
+			if tt.configFlag != "" {
+				err := analyzeCmd.Flags().Set("config", tt.configFlag)
+				assert.NoError(t, err)
+			}
+
+			// Check that the flag value is correctly set
+			configFlag := analyzeCmd.Flags().Lookup("config")
+			assert.NotNil(t, configFlag)
+			assert.Equal(t, tt.expectedFlag, configFlag.Value.String())
+		})
+	}
 }
 
 // MockCloudWatchAPI is a mock implementation of CloudWatchLogsAPI

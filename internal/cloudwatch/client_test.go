@@ -370,7 +370,7 @@ func TestClient_FilterLogEvents_NilPointers(t *testing.T) {
 func TestInt64Ptr(t *testing.T) {
 	value := int64(12345)
 	ptr := int64Ptr(value)
-	
+
 	assert.NotNil(t, ptr)
 	assert.Equal(t, value, *ptr)
 }

@@ -15,10 +15,11 @@ import (
 )
 
 var (
-	startTime string
-	endTime   string
-	logGroup  string
-	profile   string
+	startTime  string
+	endTime    string
+	logGroup   string
+	profile    string
+	configPath string
 )
 
 var analyzeCmd = &cobra.Command{
@@ -35,6 +36,7 @@ func init() {
 	analyzeCmd.Flags().StringVar(&endTime, "end", "", "End time in JST (required, format: 2006-01-02T15:04:05)")
 	analyzeCmd.Flags().StringVar(&logGroup, "log-group", "", "CloudWatch Logs log group name (required)")
 	analyzeCmd.Flags().StringVar(&profile, "profile", "", "AWS profile name (required)")
+	analyzeCmd.Flags().StringVar(&configPath, "config", "", "Path to custom exclusion configuration file (optional)")
 
 	if err := analyzeCmd.MarkFlagRequired("start"); err != nil {
 		slog.Error("Failed to mark start flag as required", "error", err)
@@ -106,8 +108,11 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 
 	slog.Info("Fetched log events", "count", len(logEvents))
 
-	// Initialize analyzer
-	analyzer := analyzer.NewAnalyzer()
+	// Initialize analyzer with config if provided
+	analyzer, err := analyzer.NewAnalyzerWithConfig(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to initialize analyzer: %w", err)
+	}
 
 	// Analyze log events
 	result := analyzer.AnalyzeLogEvents(logEvents, start.UTC(), end.UTC())

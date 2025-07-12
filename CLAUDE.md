@@ -46,8 +46,16 @@ make deps
 
 ### Application Usage
 ```bash
-# Analyze CloudWatch logs
+# Analyze CloudWatch logs with default configuration
 ./cwrstats analyze \
+  --start "2025-07-01T00:00:00" \
+  --end "2025-07-01T23:59:59" \
+  --log-group "/aws/rails/production-log" \
+  --profile myprofile
+
+# Use custom configuration file
+./cwrstats analyze \
+  --config /path/to/custom/excluded_paths.yml \
   --start "2025-07-01T00:00:00" \
   --end "2025-07-01T23:59:59" \
   --log-group "/aws/rails/production-log" \
@@ -66,6 +74,7 @@ The application follows a clean, layered architecture with clear separation of c
 - Cobra-based command-line interface
 - Handles time parsing (JST to UTC conversion)
 - Currently supports only the `analyze` command
+- Optional `--config` flag for custom exclusion configuration files
 
 #### CloudWatch Integration (`internal/cloudwatch/`)
 - Interface-based design with `CloudWatchLogsAPI` for testability
@@ -98,6 +107,16 @@ The analysis layer consists of four specialized components:
 4. **Analyzer** (`analyzer.go`):
    - Orchestrates the analysis pipeline
    - Outputs JSON sorted by request count (descending)
+   - Supports custom configuration via `NewAnalyzerWithConfig()`
+
+#### Configuration System (`internal/config/`)
+- **Path Exclusion**: Supports exact, prefix, and regex pattern matching
+- **Auto-discovery**: Searches standard configuration locations following XDG Base Directory specification
+- **Fallback**: Uses hardcoded defaults when no configuration file is found
+- **File Locations** (in order of preference):
+  1. `$XDG_CONFIG_HOME/cw-railspathmetrics/excluded_paths.yml`
+  2. `$HOME/.config/cw-railspathmetrics/excluded_paths.yml`
+  3. `$HOME/.cw-railspathmetrics/excluded_paths.yml`
 
 ### Data Flow
 1. CLI validates input and converts JST times to UTC
@@ -125,16 +144,39 @@ I, [2025-07-10T17:28:13.321048 #7]  INFO -- : [session-id] Completed 200 OK in 3
 
 ## Path Exclusion Configuration
 
-Default exclusions are hardcoded in `config/excluded_paths.yml`:
+### Configuration File Format
 ```yaml
 excluded_paths:
-  - prefix: "/rails/active_storage"
+  - exact: "/health"                    # Exact path match
+  - prefix: "/rails/active_storage"     # Prefix match
+  - pattern: "^/api/internal/.*"        # Regex pattern match
 ```
 
-The codebase supports three exclusion types:
-- `exact`: Complete path match
-- `prefix`: Match paths starting with prefix
-- `pattern`: Regular expression matching
+### Configuration Loading Strategy
+The application uses a layered configuration approach:
+
+1. **CLI Flag**: `--config /path/to/custom.yml` (highest priority)
+2. **Auto-discovery**: Searches standard locations in order:
+   - `$XDG_CONFIG_HOME/cw-railspathmetrics/excluded_paths.yml`
+   - `$HOME/.config/cw-railspathmetrics/excluded_paths.yml`
+   - `$HOME/.cw-railspathmetrics/excluded_paths.yml`
+3. **Default**: Hardcoded exclusion for `/rails/active_storage` prefix (fallback)
+
+### Go Install Distribution
+For `go install` distribution, users can create configuration files in standard locations:
+
+```bash
+# Create config directory
+mkdir -p ~/.config/cw-railspathmetrics
+
+# Create configuration file
+cat > ~/.config/cw-railspathmetrics/excluded_paths.yml << EOF
+excluded_paths:
+  - exact: "/health"
+  - prefix: "/assets"
+  - pattern: "^/api/internal/.*"
+EOF
+```
 
 ## Testing
 
@@ -165,9 +207,12 @@ The integration tests (`internal/integration/`) provide comprehensive coverage o
 
 - ✅ Core analysis engine with session-based matching
 - ✅ CloudWatch integration with pagination
-- ✅ Path normalization and exclusion
+- ✅ Path normalization and exclusion with configurable rules
 - ✅ JSON output sorted by request count
-- ✅ Comprehensive integration tests
+- ✅ Configuration system with auto-discovery and XDG Base Directory support
+- ✅ CLI --config flag for custom configuration files
+- ✅ Comprehensive integration tests including configuration scenarios
+- ✅ Go install distribution ready
 - ❌ Multiple output formats
 - ❌ Real-time log streaming
 
@@ -179,6 +224,8 @@ The integration tests (`internal/integration/`) provide comprehensive coverage o
 4. **Path Normalization**: Query parameters stripped, dynamic segments replaced with placeholders
 5. **Graceful Degradation**: Invalid logs are skipped rather than failing the entire analysis
 6. **Pipeline Architecture**: Clean separation of parsing → normalization → aggregation → output
+7. **Configuration Strategy**: XDG Base Directory compliance with fallback to hardcoded defaults
+8. **Go Install Ready**: Configuration auto-discovery enables distribution via `go install`
 
 ## Important Notes
 
@@ -205,8 +252,17 @@ When adding support for new Rails log formats:
 3. Verify integration tests still pass
 4. Update documentation in CLAUDE.md and README.md
 
+### Adding Configuration Features
+When extending the configuration system:
+1. Update `internal/config/exclusions.go` for new config options
+2. Add corresponding tests to `internal/config/exclusions_test.go`
+3. Update `NewAnalyzerWithConfig()` in `internal/analyzer/analyzer.go` if needed
+4. Test auto-discovery and fallback behavior
+5. Update CLI help text and documentation
+
 ### Debugging Issues
 - Use `go test -v` with specific package/function for detailed test output
 - Integration tests provide end-to-end debugging capability
 - Check `coverage.html` for test coverage gaps
 - Use race detection: `go test -race ./...`
+- Test configuration loading with: `CLOUDWATCH_LOG_GROUP=test go run ./cmd/cwrstats --help`

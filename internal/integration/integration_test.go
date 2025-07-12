@@ -38,11 +38,11 @@ func int64Ptr(i int64) *int64 {
 // TestFullWorkflowIntegration tests the complete workflow from CloudWatch logs to final JSON output
 func TestFullWorkflowIntegration(t *testing.T) {
 	tests := []struct {
-		name           string
-		mockLogs       []types.FilteredLogEvent
-		expectedStats  int // number of path stats expected
-		expectedPaths  []string
-		expectError    bool
+		name          string
+		mockLogs      []types.FilteredLogEvent
+		expectedStats int // number of path stats expected
+		expectedPaths []string
+		expectError   bool
 	}{
 		{
 			name: "complete workflow with matched request pairs",
@@ -148,11 +148,11 @@ func TestFullWorkflowIntegration(t *testing.T) {
 			expectError:   false,
 		},
 		{
-			name: "empty log response",
-			mockLogs: []types.FilteredLogEvent{},
+			name:          "empty log response",
+			mockLogs:      []types.FilteredLogEvent{},
 			expectedStats: 0,
 			expectedPaths: []string{},
-			expectError: false,
+			expectError:   false,
 		},
 	}
 
@@ -232,7 +232,7 @@ func TestWorkflowWithPaginationIntegration(t *testing.T) {
 
 	// Setup pagination scenario
 	filterPattern := `?Started ?Completed`
-	
+
 	// First page
 	firstPageInput := &cloudwatchlogs.FilterLogEventsInput{
 		LogGroupName:  &logGroupName,
@@ -281,7 +281,7 @@ func TestWorkflowWithPaginationIntegration(t *testing.T) {
 	logEvents := make([]*models.LogEvent, len(events))
 	for i, event := range events {
 		logEvents[i] = &models.LogEvent{
-			ID:   *event.EventId,
+			ID:        *event.EventId,
 			Message:   *event.Message,
 			Timestamp: time.UnixMilli(*event.Timestamp),
 		}
@@ -365,7 +365,7 @@ func TestErrorHandlingIntegration(t *testing.T) {
 				logEvents := make([]*models.LogEvent, len(events))
 				for i, event := range events {
 					logEvents[i] = &models.LogEvent{
-						ID:   *event.EventId,
+						ID:        *event.EventId,
 						Message:   *event.Message,
 						Timestamp: time.UnixMilli(*event.Timestamp),
 					}
@@ -482,7 +482,7 @@ func TestSessionBasedMatchingIntegration(t *testing.T) {
 	logEvents := make([]*models.LogEvent, len(events))
 	for i, event := range events {
 		logEvents[i] = &models.LogEvent{
-			ID:   *event.EventId,
+			ID:        *event.EventId,
 			Message:   *event.Message,
 			Timestamp: time.UnixMilli(*event.Timestamp),
 		}
