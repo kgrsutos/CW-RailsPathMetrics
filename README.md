@@ -1,6 +1,6 @@
 # CW-RailsPathMetrics
 
-A high-performance CLI tool for analyzing Rails application logs from AWS CloudWatch Logs. This tool aggregates request metrics by path, providing insights into application performance including request counts and response times.
+A CLI tool for analyzing Rails application logs from AWS CloudWatch Logs. This tool aggregates request metrics by path, providing insights into application performance including request counts and response times.
 
 ![Go Version](https://img.shields.io/badge/Go-1.24.5+-blue.svg)
 
@@ -33,10 +33,7 @@ make build
 
 ### Using Go Install
 
-```bash
-# Install from latest commit (no version tags available yet)
-go install github.com/kgrsutos/cw-railspathmetrics/cmd/cwrstats@main
-```
+TBD
 
 ## Usage
 
