@@ -189,3 +189,209 @@ func TestNewPathExcluder_InvalidRegexPattern(t *testing.T) {
 	_, err = NewPathExcluder(configPath)
 	assert.Error(t, err)
 }
+
+func TestFindConfigPath(t *testing.T) {
+	tests := []struct {
+		name           string
+		setupFunc      func(t *testing.T) (string, func())
+		expectedExists bool
+		expectedPath   string
+	}{
+		{
+			name: "config file in XDG_CONFIG_HOME",
+			setupFunc: func(t *testing.T) (string, func()) {
+				tempDir := t.TempDir()
+				configDir := filepath.Join(tempDir, "cw-railspathmetrics")
+				err := os.MkdirAll(configDir, 0755)
+				require.NoError(t, err)
+				
+				configFile := filepath.Join(configDir, "excluded_paths.yml")
+				err = os.WriteFile(configFile, []byte("excluded_paths: []"), 0644)
+				require.NoError(t, err)
+				
+				oldXDG := os.Getenv("XDG_CONFIG_HOME")
+				os.Setenv("XDG_CONFIG_HOME", tempDir)
+				
+				return configFile, func() {
+					if oldXDG == "" {
+						os.Unsetenv("XDG_CONFIG_HOME")
+					} else {
+						os.Setenv("XDG_CONFIG_HOME", oldXDG)
+					}
+				}
+			},
+			expectedExists: true,
+		},
+		{
+			name: "config file in HOME/.config",
+			setupFunc: func(t *testing.T) (string, func()) {
+				tempDir := t.TempDir()
+				configDir := filepath.Join(tempDir, ".config", "cw-railspathmetrics")
+				err := os.MkdirAll(configDir, 0755)
+				require.NoError(t, err)
+				
+				configFile := filepath.Join(configDir, "excluded_paths.yml")
+				err = os.WriteFile(configFile, []byte("excluded_paths: []"), 0644)
+				require.NoError(t, err)
+				
+				oldHome := os.Getenv("HOME")
+				oldXDG := os.Getenv("XDG_CONFIG_HOME")
+				os.Setenv("HOME", tempDir)
+				os.Unsetenv("XDG_CONFIG_HOME")
+				
+				return configFile, func() {
+					os.Setenv("HOME", oldHome)
+					if oldXDG != "" {
+						os.Setenv("XDG_CONFIG_HOME", oldXDG)
+					}
+				}
+			},
+			expectedExists: true,
+		},
+		{
+			name: "config file in HOME/.cw-railspathmetrics",
+			setupFunc: func(t *testing.T) (string, func()) {
+				tempDir := t.TempDir()
+				configDir := filepath.Join(tempDir, ".cw-railspathmetrics")
+				err := os.MkdirAll(configDir, 0755)
+				require.NoError(t, err)
+				
+				configFile := filepath.Join(configDir, "excluded_paths.yml")
+				err = os.WriteFile(configFile, []byte("excluded_paths: []"), 0644)
+				require.NoError(t, err)
+				
+				oldHome := os.Getenv("HOME")
+				oldXDG := os.Getenv("XDG_CONFIG_HOME")
+				os.Setenv("HOME", tempDir)
+				os.Unsetenv("XDG_CONFIG_HOME")
+				
+				return configFile, func() {
+					os.Setenv("HOME", oldHome)
+					if oldXDG != "" {
+						os.Setenv("XDG_CONFIG_HOME", oldXDG)
+					}
+				}
+			},
+			expectedExists: true,
+		},
+		{
+			name: "no config file found",
+			setupFunc: func(t *testing.T) (string, func()) {
+				tempDir := t.TempDir()
+				oldHome := os.Getenv("HOME")
+				oldXDG := os.Getenv("XDG_CONFIG_HOME")
+				os.Setenv("HOME", tempDir)
+				os.Unsetenv("XDG_CONFIG_HOME")
+				
+				return "", func() {
+					os.Setenv("HOME", oldHome)
+					if oldXDG != "" {
+						os.Setenv("XDG_CONFIG_HOME", oldXDG)
+					}
+				}
+			},
+			expectedExists: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expectedPath, cleanup := tt.setupFunc(t)
+			defer cleanup()
+
+			path, exists := FindConfigPath()
+			
+			assert.Equal(t, tt.expectedExists, exists)
+			if tt.expectedExists {
+				assert.Equal(t, expectedPath, path)
+			} else {
+				assert.Empty(t, path)
+			}
+		})
+	}
+}
+
+func TestNewPathExcluderWithSearch(t *testing.T) {
+	tests := []struct {
+		name          string
+		setupFunc     func(t *testing.T) func()
+		expectedError bool
+	}{
+		{
+			name: "find and load config file",
+			setupFunc: func(t *testing.T) func() {
+				tempDir := t.TempDir()
+				configDir := filepath.Join(tempDir, ".config", "cw-railspathmetrics")
+				err := os.MkdirAll(configDir, 0755)
+				require.NoError(t, err)
+				
+				configFile := filepath.Join(configDir, "excluded_paths.yml")
+				configContent := `excluded_paths:
+  - exact: "/health"
+  - prefix: "/assets"
+`
+				err = os.WriteFile(configFile, []byte(configContent), 0644)
+				require.NoError(t, err)
+				
+				oldHome := os.Getenv("HOME")
+				oldXDG := os.Getenv("XDG_CONFIG_HOME")
+				os.Setenv("HOME", tempDir)
+				os.Unsetenv("XDG_CONFIG_HOME")
+				
+				return func() {
+					os.Setenv("HOME", oldHome)
+					if oldXDG != "" {
+						os.Setenv("XDG_CONFIG_HOME", oldXDG)
+					}
+				}
+			},
+			expectedError: false,
+		},
+		{
+			name: "no config file found - use default",
+			setupFunc: func(t *testing.T) func() {
+				tempDir := t.TempDir()
+				oldHome := os.Getenv("HOME")
+				oldXDG := os.Getenv("XDG_CONFIG_HOME")
+				os.Setenv("HOME", tempDir)
+				os.Unsetenv("XDG_CONFIG_HOME")
+				
+				return func() {
+					os.Setenv("HOME", oldHome)
+					if oldXDG != "" {
+						os.Setenv("XDG_CONFIG_HOME", oldXDG)
+					}
+				}
+			},
+			expectedError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cleanup := tt.setupFunc(t)
+			defer cleanup()
+
+			excluder, err := NewPathExcluderWithSearch()
+			
+			if tt.expectedError {
+				assert.Error(t, err)
+				assert.Nil(t, excluder)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, excluder)
+				
+				if tt.name == "find and load config file" {
+					// Test that it works with the custom exclusions from config file
+					assert.True(t, excluder.ShouldExclude("/health"))
+					assert.True(t, excluder.ShouldExclude("/assets/style.css"))
+					assert.False(t, excluder.ShouldExclude("/users/123"))
+				} else {
+					// Test default exclusions
+					assert.True(t, excluder.ShouldExclude("/rails/active_storage/blobs/123"))
+					assert.False(t, excluder.ShouldExclude("/users/123"))
+				}
+			}
+		})
+	}
+}

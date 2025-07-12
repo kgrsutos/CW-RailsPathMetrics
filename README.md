@@ -33,14 +33,27 @@ make build
 
 ### Using Go Install
 
-TBD
+```bash
+go install github.com/kgrsutos/cw-railspathmetrics/cmd/cwrstats@latest
+```
+
+After installation, the binary will be available in your `$GOPATH/bin` directory.
 
 ## Usage
 
 ### Basic Usage
 
 ```bash
+# Using default configuration
 ./cwrstats analyze \
+  --start "2025-07-01T00:00:00" \
+  --end "2025-07-01T23:59:59" \
+  --log-group "/aws/rails/production-log" \
+  --profile myprofile
+
+# Using custom configuration file
+./cwrstats analyze \
+  --config /path/to/excluded_paths.yml \
   --start "2025-07-01T00:00:00" \
   --end "2025-07-01T23:59:59" \
   --log-group "/aws/rails/production-log" \
@@ -55,6 +68,7 @@ TBD
 | `--end` | End time in JST | Yes | `2006-01-02T15:04:05` |
 | `--log-group` | CloudWatch Logs log group name | Yes | String |
 | `--profile` | AWS profile name | Yes | String |
+| `--config` | Path to custom exclusion configuration file | No | String |
 
 ### Output Format
 
@@ -76,7 +90,9 @@ The tool outputs JSON with request metrics sorted by request count (descending):
 
 ### Path Exclusions
 
-Configure path exclusions in `config/excluded_paths.yml`:
+The application supports configurable path exclusions with automatic configuration file discovery.
+
+#### Configuration File Format
 
 ```yaml
 excluded_paths:
@@ -88,6 +104,35 @@ excluded_paths:
   
   # Regex pattern match
   - pattern: "^/api/internal/.*"
+```
+
+#### Configuration File Locations
+
+The application searches for configuration files in the following locations (in order of preference):
+
+1. **Custom path** (via `--config` flag): `/path/to/custom/excluded_paths.yml`
+2. **XDG config directory**: `$XDG_CONFIG_HOME/cw-railspathmetrics/excluded_paths.yml`
+3. **User config directory**: `$HOME/.config/cw-railspathmetrics/excluded_paths.yml`
+4. **User app directory**: `$HOME/.cw-railspathmetrics/excluded_paths.yml`
+5. **Default fallback**: Built-in exclusion for `/rails/active_storage` prefix
+
+#### Setting Up Configuration for Go Install
+
+After installing via `go install`, create a configuration file:
+
+```bash
+# Create config directory
+mkdir -p ~/.config/cw-railspathmetrics
+
+# Create configuration file
+cat > ~/.config/cw-railspathmetrics/excluded_paths.yml << EOF
+excluded_paths:
+  - exact: "/health"
+  - exact: "/ping"
+  - prefix: "/rails/active_storage"
+  - prefix: "/assets"
+  - pattern: "^/api/internal/.*"
+EOF
 ```
 
 ### AWS Permissions
@@ -123,17 +168,24 @@ Ensure your AWS profile has the following IAM permissions:
        │                                       │
        ▼                                       ▼
 ┌─────────────┐                      ┌─────────────┐
-│ Time Utils  │                      │ JSON Output │
-│ (JST↔UTC)   │                      │             │
+│ Config      │                      │ JSON Output │
+│ System      │                      │             │
 └─────────────┘                      └─────────────┘
+       │
+       ▼
+┌─────────────┐
+│ Time Utils  │
+│ (JST↔UTC)   │
+└─────────────┘
 ```
 
 ### Analysis Pipeline
 
-1. **Parser**: Extracts structured data from Rails log messages using regex patterns
-2. **Normalizer**: Converts dynamic paths to parameterized routes (e.g., `/users/123` → `/users/:id`)
-3. **Aggregator**: Matches Started/Completed log pairs by session ID and calculates metrics
-4. **Output**: Generates JSON sorted by request count
+1. **Configuration**: Loads exclusion rules from config files or uses defaults
+2. **Parser**: Extracts structured data from Rails log messages using regex patterns
+3. **Normalizer**: Converts dynamic paths to parameterized routes (e.g., `/users/123` → `/users/:id`)
+4. **Aggregator**: Matches Started/Completed log pairs by session ID, applies exclusion filters, and calculates metrics
+5. **Output**: Generates JSON sorted by request count
 
 ### Supported Log Formats
 
@@ -188,7 +240,8 @@ make test
 
 - **Interface-based Design**: All external dependencies use interfaces for easy testing
 - **Session-based Matching**: Uses session IDs from log messages for accurate request pairing
-- **Clean Architecture**: Clear separation between CLI, CloudWatch client, and analysis layers
+- **Clean Architecture**: Clear separation between CLI, CloudWatch client, configuration, and analysis layers
+- **Configuration Auto-discovery**: Follows XDG Base Directory specification with graceful fallbacks
 - **Graceful Error Handling**: Invalid logs are skipped rather than failing the entire analysis
 
 ### Code Style
