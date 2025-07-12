@@ -15,8 +15,9 @@ coverage.html
 # Go workspace file
 go.work
 
-# Binary
-cwrstats
+# Binary (root level only)
+bin
+/cwrstats
 
 # IDE specific files
 .idea/
