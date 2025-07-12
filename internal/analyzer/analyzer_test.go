@@ -145,7 +145,7 @@ func TestAnalyzer_OutputJSON(t *testing.T) {
         "count": 1,
         "max_time_ms": 150,
         "min_time_ms": 150,
-        "avg_time_ms": "150"
+        "avg_time_ms": 150
     }
 ]`,
 		},
@@ -175,7 +175,7 @@ func TestAnalyzer_OutputJSON(t *testing.T) {
         "count": 2,
         "max_time_ms": 250,
         "min_time_ms": 150,
-        "avg_time_ms": "200"
+        "avg_time_ms": 200
     }
 ]`,
 		},
@@ -222,14 +222,14 @@ func TestAnalyzer_OutputJSON(t *testing.T) {
         "count": 100,
         "max_time_ms": 2300,
         "min_time_ms": 640,
-        "avg_time_ms": "1000"
+        "avg_time_ms": 1000
     },
     {
         "path": "/path1/path3",
         "count": 50,
         "max_time_ms": 2200,
         "min_time_ms": 840,
-        "avg_time_ms": "1200"
+        "avg_time_ms": 1200
     }
 ]`,
 		},
@@ -259,7 +259,7 @@ func TestAnalyzer_OutputJSON(t *testing.T) {
         "count": 5,
         "max_time_ms": 0,
         "min_time_ms": 0,
-        "avg_time_ms": "0"
+        "avg_time_ms": 0
     }
 ]`,
 		},

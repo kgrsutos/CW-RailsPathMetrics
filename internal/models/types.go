@@ -42,7 +42,7 @@ type SimplifiedPathMetrics struct {
 	Count     int    `json:"count"`
 	MaxTimeMs int    `json:"max_time_ms"`
 	MinTimeMs int    `json:"min_time_ms"`
-	AvgTimeMs string `json:"avg_time_ms"`
+	AvgTimeMs int    `json:"avg_time_ms"`
 }
 
 // AnalysisResult represents the final analysis output

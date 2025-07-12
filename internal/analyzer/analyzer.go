@@ -2,7 +2,6 @@ package analyzer
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"sort"
 	"time"
@@ -83,7 +82,7 @@ func (a *Analyzer) OutputJSON(result *models.AnalysisResult, writer io.Writer) e
 			Count:     metrics.Count,
 			MaxTimeMs: metrics.MaxTime,
 			MinTimeMs: metrics.MinTime,
-			AvgTimeMs: fmt.Sprintf("%.0f", metrics.AverageTime),
+			AvgTimeMs: int(metrics.AverageTime),
 		})
 	}
 
