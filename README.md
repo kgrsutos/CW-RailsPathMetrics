@@ -184,8 +184,6 @@ Run the full test suite with coverage:
 make test
 ```
 
-Current test coverage: **84%** overall, **95.8%+** for the analyzer package.
-
 ### Architecture Principles
 
 - **Interface-based Design**: All external dependencies use interfaces for easy testing
