@@ -419,8 +419,8 @@ func TestTimeZoneHandlingIntegration(t *testing.T) {
 	}
 	mockAPI.On("FilterLogEvents", mock.Anything, expectedInput).Return(mockResponse, nil)
 
-	// Execute with JST times (simulating CLI input)
-	events, err := client.FilterLogEventsWithPagination(context.Background(), logGroupName, utcStart, utcEnd)
+	// Execute with JST times (simulating CLI input after parsing)
+	events, err := client.FilterLogEventsWithPagination(context.Background(), logGroupName, jstStart, jstEnd)
 	require.NoError(t, err)
 	assert.Len(t, events, 1)
 
