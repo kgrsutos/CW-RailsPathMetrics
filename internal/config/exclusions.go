@@ -2,12 +2,13 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"gopkg.in/yaml.v3"
+	yaml "gopkg.in/yaml.v3"
 )
 
 // ExclusionRule represents a rule for excluding paths
@@ -55,6 +56,14 @@ func NewPathExcluder(configPath string) (*PathExcluder, error) {
 	// Compile regex patterns
 	for _, rule := range config.ExcludedPaths {
 		if rule.Pattern != "" {
+			// Warn about potentially problematic regex patterns
+			if strings.Contains(rule.Pattern, ".*.*") {
+				slog.Warn("Regex pattern contains multiple .* which may cause performance issues", "pattern", rule.Pattern)
+			}
+			if strings.HasPrefix(rule.Pattern, ".*") && !strings.HasPrefix(rule.Pattern, "^") {
+				slog.Warn("Regex pattern starts with .* without ^ anchor, consider using prefix match instead", "pattern", rule.Pattern)
+			}
+
 			regex, err := regexp.Compile(rule.Pattern)
 			if err != nil {
 				return nil, fmt.Errorf("failed to compile regex pattern '%s': %w", rule.Pattern, err)
@@ -126,13 +135,18 @@ func FindConfigPath() (string, bool) {
 		searchPaths = append(searchPaths, filepath.Join(home, ".cw-railspathmetrics", configFilename))
 	}
 
+	slog.Debug("Searching for config file", "paths", searchPaths)
+
 	// Check each path
 	for _, path := range searchPaths {
 		if _, err := os.Stat(path); err == nil {
+			slog.Info("Found config file", "path", path)
 			return path, true
 		}
+		slog.Debug("Config file not found", "path", path)
 	}
 
+	slog.Info("No config file found, using default exclusions")
 	return "", false
 }
 
