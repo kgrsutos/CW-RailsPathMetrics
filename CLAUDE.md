@@ -13,10 +13,10 @@ CW-RailsPathMetrics is a CLI application that analyzes Rails application logs fr
 # Build the application
 make build
 
-# Run all tests with coverage report
+# Run all tests with coverage report and HTML output
 make test
 
-# Run tests and display coverage percentage
+# Run tests and display coverage percentage only
 make test-coverage
 
 # Run specific test package
@@ -24,6 +24,9 @@ go test -v ./internal/cloudwatch
 
 # Run single test function
 go test -v ./internal/analyzer -run TestAggregator_MatchRequestPairs
+
+# Run integration tests specifically
+go test -v ./internal/integration
 
 # Run tests with race detection
 go test -race ./...
@@ -108,8 +111,8 @@ The analysis layer consists of four specialized components:
 
 **Standard Format:**
 ```
-Started GET "/users/123" for 127.0.0.1 at 2023-01-01 12:00:00 +0900
-Completed 200 OK in 150ms (Views: 100.0ms | ActiveRecord: 50.0ms)
+Started GET "/users/123" for 127.0.0.1 at 2023-01-01 12:00:00 +0900 [session-id]
+Completed 200 OK in 150ms (Views: 100.0ms | ActiveRecord: 50.0ms) [session-id]
 ```
 
 **Production Format with Log Level:**
@@ -117,6 +120,8 @@ Completed 200 OK in 150ms (Views: 100.0ms | ActiveRecord: 50.0ms)
 I, [2025-07-10T17:28:13.282478 #7]  INFO -- : [session-id] Started GET "/users/123" for 127.0.0.1 at 2025-07-10 17:28:13 +0900
 I, [2025-07-10T17:28:13.321048 #7]  INFO -- : [session-id] Completed 200 OK in 33ms (Views: 18.3ms | ActiveRecord: 8.0ms | Allocations: 4970)
 ```
+
+**Important**: Session IDs are crucial for matching Started/Completed log pairs. Both formats are supported with session IDs appearing in square brackets.
 
 ## Path Exclusion Configuration
 
@@ -131,17 +136,30 @@ The codebase supports three exclusion types:
 - `prefix`: Match paths starting with prefix
 - `pattern`: Regular expression matching
 
-
 ## Testing
 
 Current coverage: ~84% overall, 95.8%+ for analyzer package
 
-Key test patterns:
+### Test Structure
+- **Unit Tests**: Each component (`parser`, `normalizer`, `aggregator`) has comprehensive unit tests
+- **Integration Tests**: Full workflow tests in `internal/integration/` that mock AWS CloudWatch and test complete data flow
+- **CLI Tests**: Command-line interface and time conversion tests
+
+### Key Test Patterns
 - Mock interfaces for AWS SDK (`MockCloudWatchLogsAPI`)
 - Table-driven tests throughout
 - Edge cases for log parsing and path normalization
 - Session ID matching validation
 - Race detection enabled in test runs
+
+### Integration Test Coverage
+The integration tests (`internal/integration/`) provide comprehensive coverage of:
+- Complete CloudWatch → Parser → Normalizer → Aggregator workflow
+- Session-based log matching with interleaved sessions
+- Path exclusion functionality
+- CloudWatch pagination handling
+- Error handling scenarios
+- JST to UTC time conversion
 
 ## Implementation Status
 
@@ -149,6 +167,7 @@ Key test patterns:
 - ✅ CloudWatch integration with pagination
 - ✅ Path normalization and exclusion
 - ✅ JSON output sorted by request count
+- ✅ Comprehensive integration tests
 - ❌ Multiple output formats
 - ❌ Real-time log streaming
 
@@ -168,3 +187,26 @@ Key test patterns:
 - **Filter Pattern Syntax**: CloudWatch filter patterns use `?Started ?Completed` syntax for unstructured Rails logs
 - **Session ID Extraction**: Session IDs are extracted from log messages using regex patterns, supporting both standard and production log formats
 - **Error Handling**: Application uses structured logging (slog) and handles AWS API errors gracefully
+- **Module Name**: `github.com/kgrsutos/cw-railspathmetrics` - use this for imports and go.mod references
+
+## Development Workflow
+
+### Adding New Features
+1. Write unit tests first (table-driven pattern preferred)
+2. Implement feature with interface-based design for external dependencies
+3. Add integration tests if the feature affects the complete workflow
+4. Run `make test` to ensure all tests pass
+5. Run `make lint` to ensure code quality
+
+### Testing New Log Formats
+When adding support for new Rails log formats:
+1. Add test cases to `internal/analyzer/parser_test.go`
+2. Update regex patterns in `internal/analyzer/parser.go`
+3. Verify integration tests still pass
+4. Update documentation in CLAUDE.md and README.md
+
+### Debugging Issues
+- Use `go test -v` with specific package/function for detailed test output
+- Integration tests provide end-to-end debugging capability
+- Check `coverage.html` for test coverage gaps
+- Use race detection: `go test -race ./...`
