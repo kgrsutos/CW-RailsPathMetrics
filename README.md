@@ -70,7 +70,7 @@ The tool outputs JSON with request metrics sorted by request count (descending):
     "count": 1250,
     "max_time_ms": 890,
     "min_time_ms": 45,
-    "avg_time_ms": "121"
+    "avg_time_ms": 121
   }
 ]
 ```

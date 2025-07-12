@@ -579,4 +579,3 @@ func TestNewAggregator(t *testing.T) {
 	aggregator := NewAggregator()
 	assert.NotNil(t, aggregator)
 }
-

@@ -79,11 +79,11 @@ func (m *MockCloudWatchAPI) FilterLogEvents(ctx context.Context, params *cloudwa
 
 func TestRunAnalyze(t *testing.T) {
 	tests := []struct {
-		name        string
-		setupFlags  func()
+		name         string
+		setupFlags   func()
 		cleanupFlags func()
-		expectError bool
-		errorMsg    string
+		expectError  bool
+		errorMsg     string
 	}{
 		{
 			name: "invalid start time format",
@@ -195,12 +195,12 @@ func TestRunAnalyzeTimeConversion(t *testing.T) {
 func TestAnalyzeCommandFlags(t *testing.T) {
 	// Test flag requirements
 	requiredFlags := []string{"start", "end", "log-group", "profile"}
-	
+
 	for _, flagName := range requiredFlags {
 		t.Run("flag_"+flagName+"_is_required", func(t *testing.T) {
 			flag := analyzeCmd.Flags().Lookup(flagName)
 			assert.NotNil(t, flag, "Flag %s should exist", flagName)
-			
+
 			// Check if flag is marked as required
 			annotations := flag.Annotations
 			if annotations != nil {
