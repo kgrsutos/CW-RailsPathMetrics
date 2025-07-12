@@ -1,59 +1,99 @@
 package main
 
 import (
-	"os"
+	"bytes"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMain(t *testing.T) {
-	// Test that main function doesn't panic when called without arguments
-	// This is a minimal test to ensure the CLI setup is working
+func TestNewApp(t *testing.T) {
+	app := NewApp()
 
-	// Save original os.Args
-	origArgs := os.Args
-	defer func() {
-		os.Args = origArgs
-	}()
-
-	// Test help command
-	os.Args = []string{"cwrstats", "--help"}
-
-	// The main function should not panic
-	assert.NotPanics(t, func() {
-		// We can't easily test main() directly as it calls os.Exit
-		// Instead, we test that the application can be initialized
-		// by importing and using the CLI components
-	})
+	assert.NotNil(t, app, "App should not be nil")
+	assert.NotNil(t, app.executeFunc, "executeFunc should not be nil")
+	assert.NotNil(t, app.exitFunc, "exitFunc should not be nil")
+	assert.NotNil(t, app.logger, "logger should not be nil")
 }
 
-func TestVersion(t *testing.T) {
-	// Test that version information is accessible
-	// This is a basic test to ensure the application has proper version handling
+func TestNewAppWithDeps(t *testing.T) {
+	var logOutput bytes.Buffer
+	mockExecute := func() error { return nil }
+	mockExit := func(int) {}
 
-	// Save original os.Args
-	origArgs := os.Args
-	defer func() {
-		os.Args = origArgs
-	}()
+	app := NewAppWithDeps(mockExecute, mockExit, &logOutput)
 
-	// Test version command
-	os.Args = []string{"cwrstats", "version"}
-
-	// The application should handle version command without panic
-	assert.NotPanics(t, func() {
-		// Similar to help, we test basic CLI structure
-	})
+	assert.NotNil(t, app, "App should not be nil")
+	assert.NotNil(t, app.executeFunc, "executeFunc should not be nil")
+	assert.NotNil(t, app.exitFunc, "exitFunc should not be nil")
+	assert.NotNil(t, app.logger, "logger should not be nil")
 }
 
-func TestApplicationStructure(t *testing.T) {
-	// Test that the application has proper structure
-	// This ensures all necessary components are properly initialized
+func TestApp_RunSuccess(t *testing.T) {
+	var logOutput bytes.Buffer
+	exitCalled := false
+	exitCode := -1
 
-	// Test that os.Args is properly handled
-	assert.NotNil(t, os.Args, "os.Args should not be nil")
+	mockExecute := func() error {
+		return nil
+	}
+	mockExit := func(code int) {
+		exitCalled = true
+		exitCode = code
+	}
 
-	// Test that we can access command line arguments
-	assert.True(t, len(os.Args) >= 1, "os.Args should have at least one element")
+	app := NewAppWithDeps(mockExecute, mockExit, &logOutput)
+	app.Run()
+
+	assert.False(t, exitCalled, "Exit should not be called on success")
+	assert.Equal(t, -1, exitCode, "Exit code should remain unchanged")
+	assert.Empty(t, logOutput.String(), "No error should be logged on success")
+}
+
+func TestApp_RunWithError(t *testing.T) {
+	var logOutput bytes.Buffer
+	exitCalled := false
+	exitCode := -1
+	testError := errors.New("test error")
+
+	mockExecute := func() error {
+		return testError
+	}
+	mockExit := func(code int) {
+		exitCalled = true
+		exitCode = code
+	}
+
+	app := NewAppWithDeps(mockExecute, mockExit, &logOutput)
+	app.Run()
+
+	assert.True(t, exitCalled, "Exit should be called on error")
+	assert.Equal(t, 1, exitCode, "Exit code should be 1")
+
+	logContent := logOutput.String()
+	assert.Contains(t, logContent, "Failed to execute command", "Error message should be logged")
+	assert.Contains(t, logContent, testError.Error(), "Specific error should be logged")
+	assert.Contains(t, logContent, "\"level\":\"ERROR\"", "Log level should be ERROR")
+}
+
+func TestApp_LoggerConfiguration(t *testing.T) {
+	var logOutput bytes.Buffer
+	mockExecute := func() error { return nil }
+	mockExit := func(int) {}
+
+	app := NewAppWithDeps(mockExecute, mockExit, &logOutput)
+	app.Run()
+
+	// The logger should be set as default during Run()
+	assert.NotNil(t, app.logger, "Logger should be configured")
+}
+
+func TestMainFunction(t *testing.T) {
+	// Test that main function can be called without panicking
+	// This is a basic smoke test
+	assert.NotPanics(t, func() {
+		app := NewApp()
+		assert.NotNil(t, app, "NewApp should create a valid app instance")
+	}, "Creating new app should not panic")
 }
