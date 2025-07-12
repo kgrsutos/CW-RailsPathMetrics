@@ -54,7 +54,7 @@ func (c *Client) FilterLogEvents(ctx context.Context, logGroupName string, start
 	// This reduces data transfer and costs by filtering at CloudWatch level
 	// Using regex pattern for unstructured Rails logs
 	filterPattern := `?Started ?Completed`
-	
+
 	input := &cloudwatchlogs.FilterLogEventsInput{
 		LogGroupName:  &logGroupName,
 		StartTime:     int64Ptr(startTime.UnixMilli()),

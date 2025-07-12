@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -31,12 +32,19 @@ type PathExcluder struct {
 func NewPathExcluder(configPath string) (*PathExcluder, error) {
 	data, err := os.ReadFile(configPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read config file %s: %w", configPath, err)
 	}
 
 	var config ExclusionConfig
 	if err := yaml.Unmarshal(data, &config); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse config file %s: %w", configPath, err)
+	}
+
+	// Validate that each rule has at least one matching criteria
+	for i, rule := range config.ExcludedPaths {
+		if rule.Exact == "" && rule.Prefix == "" && rule.Pattern == "" {
+			return nil, fmt.Errorf("exclusion rule at index %d must specify at least one matching criteria", i)
+		}
 	}
 
 	excluder := &PathExcluder{
@@ -49,7 +57,7 @@ func NewPathExcluder(configPath string) (*PathExcluder, error) {
 		if rule.Pattern != "" {
 			regex, err := regexp.Compile(rule.Pattern)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to compile regex pattern '%s': %w", rule.Pattern, err)
 			}
 			excluder.compiledRegexs = append(excluder.compiledRegexs, regex)
 		} else {
@@ -102,29 +110,29 @@ func (pe *PathExcluder) ShouldExclude(path string) bool {
 // Returns the path and a boolean indicating whether the file was found
 func FindConfigPath() (string, bool) {
 	configFilename := "excluded_paths.yml"
-	
+
 	// Search paths in order of preference
 	searchPaths := []string{}
-	
+
 	// 1. XDG_CONFIG_HOME/cw-railspathmetrics/excluded_paths.yml
 	if xdgConfig := os.Getenv("XDG_CONFIG_HOME"); xdgConfig != "" {
 		searchPaths = append(searchPaths, filepath.Join(xdgConfig, "cw-railspathmetrics", configFilename))
 	}
-	
+
 	// 2. HOME/.config/cw-railspathmetrics/excluded_paths.yml
 	if home := os.Getenv("HOME"); home != "" {
 		searchPaths = append(searchPaths, filepath.Join(home, ".config", "cw-railspathmetrics", configFilename))
 		// 3. HOME/.cw-railspathmetrics/excluded_paths.yml
 		searchPaths = append(searchPaths, filepath.Join(home, ".cw-railspathmetrics", configFilename))
 	}
-	
+
 	// Check each path
 	for _, path := range searchPaths {
 		if _, err := os.Stat(path); err == nil {
 			return path, true
 		}
 	}
-	
+
 	return "", false
 }
 
@@ -134,7 +142,7 @@ func NewPathExcluderWithSearch() (*PathExcluder, error) {
 	if configPath, found := FindConfigPath(); found {
 		return NewPathExcluder(configPath)
 	}
-	
+
 	// No config file found, use default exclusions
 	return NewDefaultPathExcluder(), nil
 }

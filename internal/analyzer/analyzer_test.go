@@ -302,14 +302,14 @@ func TestNewAnalyzerWithConfig(t *testing.T) {
 			setupFunc: func(t *testing.T) (string, func()) {
 				tempDir := t.TempDir()
 				configPath := filepath.Join(tempDir, "custom_exclusions.yml")
-				
+
 				configContent := `excluded_paths:
   - exact: "/custom_health"
   - prefix: "/custom_assets"
 `
 				err := os.WriteFile(configPath, []byte(configContent), 0644)
 				require.NoError(t, err)
-				
+
 				return configPath, func() {}
 			},
 			expectedError: false,
@@ -321,7 +321,7 @@ func TestNewAnalyzerWithConfig(t *testing.T) {
 				configDir := filepath.Join(tempDir, ".config", "cw-railspathmetrics")
 				err := os.MkdirAll(configDir, 0755)
 				require.NoError(t, err)
-				
+
 				configFile := filepath.Join(configDir, "excluded_paths.yml")
 				configContent := `excluded_paths:
   - exact: "/search_health"
@@ -329,12 +329,12 @@ func TestNewAnalyzerWithConfig(t *testing.T) {
 `
 				err = os.WriteFile(configFile, []byte(configContent), 0644)
 				require.NoError(t, err)
-				
+
 				oldHome := os.Getenv("HOME")
 				oldXDG := os.Getenv("XDG_CONFIG_HOME")
 				os.Setenv("HOME", tempDir)
 				os.Unsetenv("XDG_CONFIG_HOME")
-				
+
 				return "", func() {
 					os.Setenv("HOME", oldHome)
 					if oldXDG != "" {
@@ -349,14 +349,14 @@ func TestNewAnalyzerWithConfig(t *testing.T) {
 			setupFunc: func(t *testing.T) (string, func()) {
 				tempDir := t.TempDir()
 				configPath := filepath.Join(tempDir, "invalid.yml")
-				
+
 				invalidContent := `excluded_paths:
   - exact: "/health"
     invalid_yaml: [
 `
 				err := os.WriteFile(configPath, []byte(invalidContent), 0644)
 				require.NoError(t, err)
-				
+
 				return configPath, func() {}
 			},
 			expectedError: true,
@@ -376,7 +376,7 @@ func TestNewAnalyzerWithConfig(t *testing.T) {
 			defer cleanup()
 
 			analyzer, err := NewAnalyzerWithConfig(configPath)
-			
+
 			if tt.expectedError {
 				assert.Error(t, err)
 				assert.Nil(t, analyzer)
@@ -395,21 +395,21 @@ func TestAnalyzer_WithCustomConfig_Integration(t *testing.T) {
 	// Create custom config file
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, "test_exclusions.yml")
-	
+
 	configContent := `excluded_paths:
   - exact: "/health"
   - prefix: "/assets"
 `
 	err := os.WriteFile(configPath, []byte(configContent), 0644)
 	require.NoError(t, err)
-	
+
 	// Create analyzer with custom config
 	analyzer, err := NewAnalyzerWithConfig(configPath)
 	require.NoError(t, err)
-	
+
 	startTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	endTime := time.Date(2023, 1, 1, 23, 59, 59, 0, time.UTC)
-	
+
 	// Test log events including excluded paths
 	logEvents := []*models.LogEvent{
 		{
@@ -443,14 +443,14 @@ func TestAnalyzer_WithCustomConfig_Integration(t *testing.T) {
 			Timestamp: time.Date(2023, 1, 1, 12, 2, 1, 0, time.UTC),
 		},
 	}
-	
+
 	result := analyzer.AnalyzeLogEvents(logEvents, startTime, endTime)
-	
+
 	// Only /users/:id should remain (health and assets paths should be excluded)
 	assert.Equal(t, 6, result.TotalLogs)
 	assert.Len(t, result.PathMetrics, 1)
 	assert.Contains(t, result.PathMetrics, "/users/:id")
-	
+
 	userMetrics := result.PathMetrics["/users/:id"]
 	assert.Equal(t, 1, userMetrics.Count)
 	assert.Equal(t, 150.0, userMetrics.AverageTime)

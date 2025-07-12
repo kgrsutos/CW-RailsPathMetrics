@@ -156,8 +156,11 @@ func TestNewPathExcluder_WithConfigFile(t *testing.T) {
 
 func TestNewPathExcluder_InvalidConfigFile(t *testing.T) {
 	// Test with non-existent file
-	_, err := NewPathExcluder("/non/existent/file.yml")
+	nonExistentPath := "/non/existent/file.yml"
+	_, err := NewPathExcluder(nonExistentPath)
 	assert.Error(t, err)
+	// Should contain the file path in the error for context
+	assert.Contains(t, err.Error(), nonExistentPath)
 
 	// Test with invalid YAML
 	tempDir := t.TempDir()
@@ -173,6 +176,9 @@ func TestNewPathExcluder_InvalidConfigFile(t *testing.T) {
 
 	_, err = NewPathExcluder(configPath)
 	assert.Error(t, err)
+	// Should contain the config path in the error message
+	assert.Contains(t, err.Error(), configPath)
+	assert.Contains(t, err.Error(), "failed to parse config file")
 }
 
 func TestNewPathExcluder_InvalidRegexPattern(t *testing.T) {
@@ -188,6 +194,9 @@ func TestNewPathExcluder_InvalidRegexPattern(t *testing.T) {
 
 	_, err = NewPathExcluder(configPath)
 	assert.Error(t, err)
+	// Should contain context about which pattern failed
+	assert.Contains(t, err.Error(), "[invalid_regex")
+	assert.Contains(t, err.Error(), "failed to compile regex pattern")
 }
 
 func TestFindConfigPath(t *testing.T) {
@@ -204,14 +213,14 @@ func TestFindConfigPath(t *testing.T) {
 				configDir := filepath.Join(tempDir, "cw-railspathmetrics")
 				err := os.MkdirAll(configDir, 0755)
 				require.NoError(t, err)
-				
+
 				configFile := filepath.Join(configDir, "excluded_paths.yml")
 				err = os.WriteFile(configFile, []byte("excluded_paths: []"), 0644)
 				require.NoError(t, err)
-				
+
 				oldXDG := os.Getenv("XDG_CONFIG_HOME")
 				os.Setenv("XDG_CONFIG_HOME", tempDir)
-				
+
 				return configFile, func() {
 					if oldXDG == "" {
 						os.Unsetenv("XDG_CONFIG_HOME")
@@ -229,16 +238,16 @@ func TestFindConfigPath(t *testing.T) {
 				configDir := filepath.Join(tempDir, ".config", "cw-railspathmetrics")
 				err := os.MkdirAll(configDir, 0755)
 				require.NoError(t, err)
-				
+
 				configFile := filepath.Join(configDir, "excluded_paths.yml")
 				err = os.WriteFile(configFile, []byte("excluded_paths: []"), 0644)
 				require.NoError(t, err)
-				
+
 				oldHome := os.Getenv("HOME")
 				oldXDG := os.Getenv("XDG_CONFIG_HOME")
 				os.Setenv("HOME", tempDir)
 				os.Unsetenv("XDG_CONFIG_HOME")
-				
+
 				return configFile, func() {
 					os.Setenv("HOME", oldHome)
 					if oldXDG != "" {
@@ -255,16 +264,16 @@ func TestFindConfigPath(t *testing.T) {
 				configDir := filepath.Join(tempDir, ".cw-railspathmetrics")
 				err := os.MkdirAll(configDir, 0755)
 				require.NoError(t, err)
-				
+
 				configFile := filepath.Join(configDir, "excluded_paths.yml")
 				err = os.WriteFile(configFile, []byte("excluded_paths: []"), 0644)
 				require.NoError(t, err)
-				
+
 				oldHome := os.Getenv("HOME")
 				oldXDG := os.Getenv("XDG_CONFIG_HOME")
 				os.Setenv("HOME", tempDir)
 				os.Unsetenv("XDG_CONFIG_HOME")
-				
+
 				return configFile, func() {
 					os.Setenv("HOME", oldHome)
 					if oldXDG != "" {
@@ -282,7 +291,7 @@ func TestFindConfigPath(t *testing.T) {
 				oldXDG := os.Getenv("XDG_CONFIG_HOME")
 				os.Setenv("HOME", tempDir)
 				os.Unsetenv("XDG_CONFIG_HOME")
-				
+
 				return "", func() {
 					os.Setenv("HOME", oldHome)
 					if oldXDG != "" {
@@ -300,7 +309,7 @@ func TestFindConfigPath(t *testing.T) {
 			defer cleanup()
 
 			path, exists := FindConfigPath()
-			
+
 			assert.Equal(t, tt.expectedExists, exists)
 			if tt.expectedExists {
 				assert.Equal(t, expectedPath, path)
@@ -324,7 +333,7 @@ func TestNewPathExcluderWithSearch(t *testing.T) {
 				configDir := filepath.Join(tempDir, ".config", "cw-railspathmetrics")
 				err := os.MkdirAll(configDir, 0755)
 				require.NoError(t, err)
-				
+
 				configFile := filepath.Join(configDir, "excluded_paths.yml")
 				configContent := `excluded_paths:
   - exact: "/health"
@@ -332,12 +341,12 @@ func TestNewPathExcluderWithSearch(t *testing.T) {
 `
 				err = os.WriteFile(configFile, []byte(configContent), 0644)
 				require.NoError(t, err)
-				
+
 				oldHome := os.Getenv("HOME")
 				oldXDG := os.Getenv("XDG_CONFIG_HOME")
 				os.Setenv("HOME", tempDir)
 				os.Unsetenv("XDG_CONFIG_HOME")
-				
+
 				return func() {
 					os.Setenv("HOME", oldHome)
 					if oldXDG != "" {
@@ -355,7 +364,7 @@ func TestNewPathExcluderWithSearch(t *testing.T) {
 				oldXDG := os.Getenv("XDG_CONFIG_HOME")
 				os.Setenv("HOME", tempDir)
 				os.Unsetenv("XDG_CONFIG_HOME")
-				
+
 				return func() {
 					os.Setenv("HOME", oldHome)
 					if oldXDG != "" {
@@ -373,14 +382,14 @@ func TestNewPathExcluderWithSearch(t *testing.T) {
 			defer cleanup()
 
 			excluder, err := NewPathExcluderWithSearch()
-			
+
 			if tt.expectedError {
 				assert.Error(t, err)
 				assert.Nil(t, excluder)
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, excluder)
-				
+
 				if tt.name == "find and load config file" {
 					// Test that it works with the custom exclusions from config file
 					assert.True(t, excluder.ShouldExclude("/health"))
@@ -391,6 +400,112 @@ func TestNewPathExcluderWithSearch(t *testing.T) {
 					assert.True(t, excluder.ShouldExclude("/rails/active_storage/blobs/123"))
 					assert.False(t, excluder.ShouldExclude("/users/123"))
 				}
+			}
+		})
+	}
+}
+
+func TestNewPathExcluder_ConfigValidation(t *testing.T) {
+	tests := []struct {
+		name          string
+		configContent string
+		expectedError bool
+		errorContains string
+	}{
+		{
+			name: "valid config with exact rule",
+			configContent: `excluded_paths:
+  - exact: "/health"
+`,
+			expectedError: false,
+		},
+		{
+			name: "valid config with prefix rule",
+			configContent: `excluded_paths:
+  - prefix: "/api"
+`,
+			expectedError: false,
+		},
+		{
+			name: "valid config with pattern rule",
+			configContent: `excluded_paths:
+  - pattern: "^/internal/.*"
+`,
+			expectedError: false,
+		},
+		{
+			name: "valid config with multiple criteria in one rule",
+			configContent: `excluded_paths:
+  - exact: "/health"
+    prefix: "/api"
+`,
+			expectedError: false,
+		},
+		{
+			name: "valid config with multiple rules",
+			configContent: `excluded_paths:
+  - exact: "/health"
+  - prefix: "/api"
+  - pattern: "^/internal/.*"
+`,
+			expectedError: false,
+		},
+		{
+			name: "invalid config with empty rule",
+			configContent: `excluded_paths:
+  - exact: ""
+    prefix: ""
+    pattern: ""
+`,
+			expectedError: true,
+			errorContains: "exclusion rule at index 0 must specify at least one matching criteria",
+		},
+		{
+			name: "invalid config with completely empty rule",
+			configContent: `excluded_paths:
+  - {}
+`,
+			expectedError: true,
+			errorContains: "exclusion rule at index 0 must specify at least one matching criteria",
+		},
+		{
+			name: "mixed valid and invalid rules",
+			configContent: `excluded_paths:
+  - exact: "/health"
+  - exact: ""
+    prefix: ""
+    pattern: ""
+`,
+			expectedError: true,
+			errorContains: "exclusion rule at index 1 must specify at least one matching criteria",
+		},
+		{
+			name: "valid config with empty excluded_paths",
+			configContent: `excluded_paths: []
+`,
+			expectedError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			configPath := filepath.Join(tempDir, "test_config.yml")
+
+			err := os.WriteFile(configPath, []byte(tt.configContent), 0644)
+			require.NoError(t, err)
+
+			excluder, err := NewPathExcluder(configPath)
+
+			if tt.expectedError {
+				assert.Error(t, err)
+				assert.Nil(t, excluder)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, excluder)
 			}
 		})
 	}

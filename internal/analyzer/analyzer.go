@@ -31,7 +31,7 @@ func NewAnalyzer() *Analyzer {
 func NewAnalyzerWithConfig(configPath string) (*Analyzer, error) {
 	var aggregator *Aggregator
 	var err error
-	
+
 	if configPath != "" {
 		// Use specific config file
 		aggregator, err = NewAggregatorWithConfig(configPath)
@@ -46,7 +46,7 @@ func NewAnalyzerWithConfig(configPath string) (*Analyzer, error) {
 		}
 		aggregator = NewAggregatorWithPathExcluder(pathExcluder)
 	}
-	
+
 	return &Analyzer{
 		parser:     NewParser(),
 		normalizer: NewNormalizer(),
