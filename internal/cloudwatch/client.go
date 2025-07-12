@@ -50,10 +50,16 @@ func NewClientWithAPI(api CloudWatchLogsAPI) *Client {
 
 // FilterLogEvents retrieves log events from CloudWatch Logs
 func (c *Client) FilterLogEvents(ctx context.Context, logGroupName string, startTime, endTime time.Time) ([]types.FilteredLogEvent, error) {
+	// Filter pattern to only fetch logs containing "Started" or "Completed"
+	// This reduces data transfer and costs by filtering at CloudWatch level
+	// Using regex pattern for unstructured Rails logs
+	filterPattern := `?Started ?Completed`
+	
 	input := &cloudwatchlogs.FilterLogEventsInput{
-		LogGroupName: &logGroupName,
-		StartTime:    int64Ptr(startTime.UnixMilli()),
-		EndTime:      int64Ptr(endTime.UnixMilli()),
+		LogGroupName:  &logGroupName,
+		StartTime:     int64Ptr(startTime.UnixMilli()),
+		EndTime:       int64Ptr(endTime.UnixMilli()),
+		FilterPattern: &filterPattern,
 	}
 
 	output, err := c.api.FilterLogEvents(ctx, input)
@@ -69,12 +75,18 @@ func (c *Client) FilterLogEventsWithPagination(ctx context.Context, logGroupName
 	var allEvents []types.FilteredLogEvent
 	var nextToken *string
 
+	// Filter pattern to only fetch logs containing "Started" or "Completed"
+	// This reduces data transfer and costs by filtering at CloudWatch level
+	// Using regex pattern for unstructured Rails logs
+	filterPattern := `?Started ?Completed`
+
 	for {
 		input := &cloudwatchlogs.FilterLogEventsInput{
-			LogGroupName: &logGroupName,
-			StartTime:    int64Ptr(startTime.UnixMilli()),
-			EndTime:      int64Ptr(endTime.UnixMilli()),
-			NextToken:    nextToken,
+			LogGroupName:  &logGroupName,
+			StartTime:     int64Ptr(startTime.UnixMilli()),
+			EndTime:       int64Ptr(endTime.UnixMilli()),
+			NextToken:     nextToken,
+			FilterPattern: &filterPattern,
 		}
 
 		output, err := c.api.FilterLogEvents(ctx, input)
